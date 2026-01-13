@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+
+        <domain includeSubdomains="true">mtd.llc</domain>
+
+        <domain includeSubdomains="true">api.argentinatv.live</domain>
+        <domain includeSubdomains="true">cdn.tvar.io</domain>
+        <domain includeSubdomains="true">cvattv.com.ar</domain>
+        <domain includeSubdomains="true">plpro.org</domain>
+        <domain includeSubdomains="true">ts2.tvcluboficial.com</domain>
+
+        <domain includeSubdomains="true">planettvweb.com</domain>
+        <domain includeSubdomains="true">23.153.217.93</domain>
+        <domain includeSubdomains="true">23.153.216.177</domain>
+
+        <domain includeSubdomains="true">195.66.210.10</domain>
+        <domain includeSubdomains="true">64.20.38.234</domain>
+        <domain includeSubdomains="true">23.162.200.121</domain>
+
+    </domain-config>
+</network-security-config>
