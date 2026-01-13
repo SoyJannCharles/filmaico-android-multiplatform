@@ -1,0 +1,118 @@
+<resources>
+
+    <string name="app_name">Filmaico</string>
+
+    <string name="app_logo_content_description">Logo de Filmaico</string>
+
+    <string name="no_internet_dialog_title">No hay conexión a Internet</string>
+    <string name="no_internet_dialog_body">Tu dispositivo no cuenta con acceso a Internet ahora mismo.</string>
+
+    <string name="error_dialog_title">Ha ocurrido un error</string>
+    <string name="error_dialog_message">Lo sentimos, algo se salio de nuestro control. Por favor, inténtalo de nuevo.</string>
+    <string name="error_dialog_button">Aceptar</string>
+
+    <string name="actionable_dialog_button">Confirmar</string>
+
+    <string name="confirmation_dialog_title">¿Estás seguro?</string>
+    <string name="confirmation_dialog_message">Esta acción no se puede deshacer.</string>
+    <string name="confirmation_dialog_confirm_button">Confirmar</string>
+    <string name="confirmation_dialog_cancel_button">Cancelar</string>
+
+    <string name="update_required_title">Una nueva versión te espera</string>
+    <string name="update_required_body">Para seguir disfrutando del mejor contenido y las últimas funciones, es necesario actualizar la aplicación.</string>
+    <string name="update_required_button">Actualizar Ahora</string>
+    <string name="update_required_version_current_label">Versión Actual</string>
+    <string name="update_required_version_latest_label">Versión más Reciente</string>
+
+    <string name="auth_error_email_already_in_use">Este correo electrónico ya está en uso.</string>
+    <string name="auth_error_weak_password">La contraseña es demasiado débil. Debe tener al menos 6 caracteres.</string>
+    <string name="auth_error_invalid_credentials">Correo electrónico o contraseña incorrectos.</string>
+    <string name="auth_error_user_not_found">No se encontró una cuenta con ese correo electrónico.</string>
+    <string name="auth_error_account_disabled">Tu cuenta ha sido deshabilitada. Contacta a soporte.</string>
+    <string name="auth_error_requires_recent_login">Por seguridad, por favor vuelve a iniciar sesión.</string>
+    <string name="auth_error_too_many_devices">Has alcanzado el límite de dispositivos activos.</string>
+    <string name="auth_error_permission_denied">No tienes permiso para realizar esta acción.</string>
+    <string name="auth_error_too_many_requests">Demasiados intentos fallidos. Por favor, intenta de nuevo más tarde.</string>
+    <string name="auth_error_network_error">Error de red. Verifica tu conexión a internet.</string>
+    <string name="auth_error_server_error">Error del servidor. Por favor, intenta de nuevo más tarde.</string>
+    <string name="auth_error_null_user">Ocurrió un error inesperado al procesar tu sesión.</string>
+    <string name="auth_error_unknown">Ocurrió un error desconocido. Intenta de nuevo.</string>
+
+    <string name="signin_title">Inicia Sesión</string>
+    <string name="signin_label_email">Correo Electrónico</string>
+    <string name="signin_label_password">Contraseña</string>
+    <string name="signin_button">Iniciar Sesión</string>
+    <string name="signin_text_no_account">¿No tienes una cuenta?</string>
+    <string name="signin_link_go_to_signup">Crear Cuenta</string>
+
+    <string name="signup_title">Crear Cuenta</string>
+    <string name="signup_label_email">Correo Electrónico</string>
+    <string name="signup_label_password">Contraseña</string>
+    <string name="signup_button">Crear Cuenta</string>
+    <string name="signup_text_i_have_account">¿Ya tienes una cuenta?</string>
+    <string name="signup_link_go_to_signin">Inicia Sesión</string>
+
+    <string name="pay_title">Activa tu Suscripción</string>
+    <string name="pay_instructions">Por favor, realiza el pago a través de los medios indicados y notifícanos para activar tu cuenta.</string>
+    <string name="pay_text_waiting_for_confirmation">Estamos verificando tu pago…</string>
+    <string name="pay_button_cancel">Cancelar</string>
+
+    <string name="cancel_subscription_dialog_title">Cancelar suscripción</string>
+    <string name="cancel_subscription_dialog_message">Si cancelas ahora, se eliminará tu cuenta y deberás registrarte nuevamente. ¿Estás seguro?</string>
+    <string name="cancel_subscription_dialog_confirm_button">Sí, eliminar cuenta</string>
+
+    <string name="reauth_dialog_title">Confirmar Identidad</string>
+    <string name="reauth_dialog_message">Por tu seguridad, ingresa tu contraseña para continuar.</string>
+    <string name="reauth_dialog_password_label">Contraseña</string>
+    <string name="reauth_dialog_confirm_button">Confirmar</string>
+    <string name="reauth_dialog_cancel_button">Cancelar</string>
+
+    <string name="home_topbar_label_search">Buscar…</string>
+    <string name="home_topbar_profile_icon_content_description">Abrir perfil</string>
+
+    <string name="bottomnav_item_home">Inicio</string>
+    <string name="bottomnav_item_search">Buscar</string>
+    <string name="bottomnav_item_mylist">Mi Lista</string>
+    <string name="bottomnav_item_profile">Mi Perfil</string>
+
+    <string name="railnav_item_search">Buscar</string>
+    <string name="railnav_item_home">Inicio</string>
+    <string name="railnav_item_mylist">Mi Lista</string>
+    <string name="railnav_item_movies">Peliculas</string>
+    <string name="railnav_item_series">Series</string>
+    <string name="railnav_item_channels">Canales</string>
+    <string name="railnav_item_animes">Animes</string>
+    <string name="railnav_item_profile">Mi Perfil</string>
+
+    <string name="moviedetail_button_play">Reproducir</string>
+
+    <string name="seriedetail_text_seasons">Temporadas</string>
+    <string name="seriedetail_text_episodes">Episodios</string>
+    <string name="seriedetail_text_episode">Episodio</string>
+
+    <string name="serie_season_selector_content_description">Icono para seleccionar la temporada</string>
+
+    <string name="anime_detail_text_seasons">Temporadas</string>
+    <string name="anime_detail_text_episodes">Episodios</string>
+    <string name="anime_detail_text_episode">Episodio</string>
+    <string name="anime_detail_text_movie">Película</string>
+    <string name="anime_detail_text_ova">Ova</string>
+
+    <string name="anime_season_selector_content_description">Icono para seleccionar la temporada</string>
+
+    <string name="content_type_episode">Episodio</string>
+    <string name="content_type_movie">Película</string>
+    <string name="content_type_ova">Ova</string>
+
+    <string name="content_status_airing">En Emisión</string>
+    <string name="content_status_finished">Finalizado</string>
+    <string name="content_status_on_hiatus">En Pausa</string>
+    <string name="content_status_unknown">Desconocido</string>
+
+    <string name="ui_component_image_blurred_content_description">Imagen desenfocada</string>
+
+    <string name="ui_component_section_synopsis_title">Sinopsis</string>
+    <string name="ui_component_section_synopsis_button_show_more">Ver más</string>
+    <string name="ui_component_section_synopsis_button_show_less">Ver menos</string>
+
+</resources>

@@ -1,0 +1,118 @@
+<resources>
+
+    <string name="app_name">Filmaico</string>
+
+    <string name="app_logo_content_description">Filmaico Logo</string>
+
+    <string name="no_internet_dialog_title">No Internet Connection</string>
+    <string name="no_internet_dialog_body">Your device is not connected to the internet right now.</string>
+
+    <string name="error_dialog_title">An Error Occurred</string>
+    <string name="error_dialog_message">Sorry, something went wrong. Please try again.</string>
+    <string name="error_dialog_button">Accept</string>
+
+    <string name="actionable_dialog_button">Confirm</string>
+
+    <string name="confirmation_dialog_title">Are you sure?</string>
+    <string name="confirmation_dialog_message">This action cannot be undone.</string>
+    <string name="confirmation_dialog_confirm_button">Confirm</string>
+    <string name="confirmation_dialog_cancel_button">Cancel</string>
+
+    <string name="update_required_title">A New Version Awaits You</string>
+    <string name="update_required_body">To continue enjoying the best content and the latest features, you need to update the application.</string>
+    <string name="update_required_button">Update Now</string>
+    <string name="update_required_version_current_label">Current Version</string>
+    <string name="update_required_version_latest_label">Latest Version</string>
+
+    <string name="auth_error_email_already_in_use">This email is already in use.</string>
+    <string name="auth_error_weak_password">The password is too weak. It must be at least 6 characters.</string>
+    <string name="auth_error_invalid_credentials">Incorrect email or password.</string>
+    <string name="auth_error_user_not_found">No account found with that email.</string>
+    <string name="auth_error_account_disabled">Your account has been disabled. Please contact support.</string>
+    <string name="auth_error_requires_recent_login">For security, please sign in again.</string>
+    <string name="auth_error_too_many_devices">You have reached the device limit.</string>
+    <string name="auth_error_permission_denied">You do not have permission to perform this action.</string>
+    <string name="auth_error_too_many_requests">Too many failed attempts. Please try again later.</string>
+    <string name="auth_error_network_error">Network error. Please check your internet connection.</string>
+    <string name="auth_error_server_error">Server error. Please try again later.</string>
+    <string name="auth_error_null_user">An unexpected error occurred while processing your session.</string>
+    <string name="auth_error_unknown">An unknown error occurred. Please try again.</string>
+
+    <string name="signin_title">Sign In</string>
+    <string name="signin_label_email">Email</string>
+    <string name="signin_label_password">Password</string>
+    <string name="signin_button">Sign In</string>
+    <string name="signin_text_no_account">Don\'t have an account?</string>
+    <string name="signin_link_go_to_signup">Sign Up</string>
+
+    <string name="signup_title">Sign Up</string>
+    <string name="signup_label_email">Email</string>
+    <string name="signup_label_password">Password</string>
+    <string name="signup_button">Sign Up</string>
+    <string name="signup_text_i_have_account">Do you have an account?</string>
+    <string name="signup_link_go_to_signin">Sign In</string>
+
+    <string name="pay_title">Activate Your Subscription</string>
+    <string name="pay_instructions">Please make the payment using the methods listed below and notify us to activate your account.</string>
+    <string name="pay_text_waiting_for_confirmation">We\'re verifying your payment...</string>
+    <string name="pay_button_cancel">Cancel</string>
+
+    <string name="cancel_subscription_dialog_title">Cancel Subscription</string>
+    <string name="cancel_subscription_dialog_message">If you cancel now, your account will be deleted and you will need to register again. Are you sure?</string>
+    <string name="cancel_subscription_dialog_confirm_button">Yes, delete account</string>
+
+    <string name="reauth_dialog_title">Confirm Identity</string>
+    <string name="reauth_dialog_message">For security, please enter your password to continue.</string>
+    <string name="reauth_dialog_password_label">Password</string>
+    <string name="reauth_dialog_confirm_button">Confirm</string>
+    <string name="reauth_dialog_cancel_button">Cancel</string>
+
+    <string name="home_topbar_label_search">Search…</string>
+    <string name="home_topbar_profile_icon_content_description">Open profile</string>
+
+    <string name="bottomnav_item_home">Home</string>
+    <string name="bottomnav_item_search">Search</string>
+    <string name="bottomnav_item_mylist">My List</string>
+    <string name="bottomnav_item_profile">My Profile</string>
+
+    <string name="railnav_item_search">Search</string>
+    <string name="railnav_item_home">Home</string>
+    <string name="railnav_item_mylist">My List</string>
+    <string name="railnav_item_movies">Movies</string>
+    <string name="railnav_item_series">Series</string>
+    <string name="railnav_item_channels">Channels</string>
+    <string name="railnav_item_animes">Animes</string>
+    <string name="railnav_item_profile">My Profile</string>
+
+    <string name="moviedetail_button_play">Play</string>
+
+    <string name="seriedetail_text_seasons">Seasons</string>
+    <string name="seriedetail_text_episodes">Episodes</string>
+    <string name="seriedetail_text_episode">Episode</string>
+
+    <string name="serie_season_selector_content_description">Icon to select a season</string>
+
+    <string name="anime_detail_text_seasons">Seasons</string>
+    <string name="anime_detail_text_episodes">Episodes</string>
+    <string name="anime_detail_text_episode">Episode</string>
+    <string name="anime_detail_text_movie">Movie</string>
+    <string name="anime_detail_text_ova">Ova</string>
+
+    <string name="anime_season_selector_content_description">Icon to select a season</string>
+
+    <string name="content_type_episode">Episode</string>
+    <string name="content_type_movie">Movie</string>
+    <string name="content_type_ova">Ova</string>
+
+    <string name="content_status_airing">Airing</string>
+    <string name="content_status_finished">Finished</string>
+    <string name="content_status_on_hiatus">On Hiatus</string>
+    <string name="content_status_unknown">Unknown</string>
+
+    <string name="ui_component_image_blurred_content_description">Blurred image</string>
+
+    <string name="ui_component_section_synopsis_title">Synopsis</string>
+    <string name="ui_component_section_synopsis_button_show_more">Show more</string>
+    <string name="ui_component_section_synopsis_button_show_less">Show less</string>
+
+</resources>
