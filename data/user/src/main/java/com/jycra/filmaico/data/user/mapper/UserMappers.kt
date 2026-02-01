@@ -7,6 +7,7 @@ fun UserDto.toDomain(): User {
     return User(
         uid = this.uid,
         email = this.email,
-        subscription = this.subscription.toDomain()
+        subscription = this.subscription.toDomain(),
+        activeSessions = this.activeSessions.map { it.toDomain() }
     )
 }

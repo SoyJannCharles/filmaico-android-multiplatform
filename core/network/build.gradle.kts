@@ -14,7 +14,6 @@ dependencies {
     implementation(project(":core:config"))
     implementation(project(":core:model"))
     implementation(project(":data:stream"))
-    implementation(project(":domain:stream"))
 }
 
 addNetwork()

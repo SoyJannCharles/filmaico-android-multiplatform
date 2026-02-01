@@ -3,21 +3,22 @@ package com.jycra.filmaico.feature.main
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import com.jycra.filmaico.core.navigation.Platform
+import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.navigation.route.AppRoutes
+import com.jycra.filmaico.domain.media.model.MediaType
 
 fun NavGraphBuilder.mainRoute(
     platform: Platform,
-    onNavigateToDetail: (contentType: String, contentId: String) -> Unit,
-    onNavigateToPlayer: (contentType: String, contentId: String) -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToDetail: (mediaType: MediaType, contentId: String) -> Unit,
+    onNavigateToPlayer: (mediaType: MediaType, assetId: String) -> Unit,
+    onNavigateToAuth: () -> Unit
 ) {
     composable(route = AppRoutes.MAIN) {
         MainRoute(
             platform = platform,
             onNavigateToPlayer = onNavigateToPlayer,
             onNavigateToDetail = onNavigateToDetail,
-            onNavigateToProfile = onNavigateToProfile
+            onNavigateToAuth = onNavigateToAuth
         )
     }
 }
@@ -30,7 +31,7 @@ fun NavController.navigateToMainFromSplash() {
     }
 }
 
-fun NavController.navigateToMainFromSignIn() {
+fun NavController.navigateToMainFromAuth() {
     navigate(AppRoutes.MAIN) {
         popUpTo(AppRoutes.SIGN_IN) {
             inclusive = true
@@ -38,9 +39,9 @@ fun NavController.navigateToMainFromSignIn() {
     }
 }
 
-fun NavController.navigateToMainFromPay() {
+fun NavController.navigateToMainFromSubscription() {
     navigate(AppRoutes.MAIN) {
-        popUpTo(AppRoutes.PAY) {
+        popUpTo(AppRoutes.SUBSCRIPTION) {
             inclusive = true
         }
     }

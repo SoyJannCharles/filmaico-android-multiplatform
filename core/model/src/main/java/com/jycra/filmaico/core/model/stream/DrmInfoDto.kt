@@ -4,6 +4,13 @@ import androidx.annotation.Keep
 
 @Keep
 data class DrmInfoDto(
-    val scheme: String? = null,
-    val licenseUrl: String? = null
-)
+    val scheme: String = "clearkey",
+    val licenseUrl: String = "",
+    val staticKeys: KeyDto = KeyDto()
+) {
+
+    fun isValid(): Boolean {
+        return licenseUrl.isNotBlank() || staticKeys.isValid()
+    }
+
+}

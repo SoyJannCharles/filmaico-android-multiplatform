@@ -1,7 +1,7 @@
 package com.jycra.filmaico.core.network.api
 
 import com.jycra.filmaico.core.model.stream.CookieDto
-import com.jycra.filmaico.core.model.stream.DrmKeysDto
+import com.jycra.filmaico.core.model.stream.KeysDto
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -32,6 +32,6 @@ interface AttrStreamApiService {
         @Url url: String,
         @Header("User-Agent") userAgent: String,
         @Body body: RequestBody
-    ): DrmKeysDto
+    ): KeysDto
 
 }

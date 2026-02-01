@@ -1,29 +1,25 @@
 package com.jycra.filmaico.feature.anime.detail
 
-import com.jycra.filmaico.domain.anime.model.Anime
-import com.jycra.filmaico.domain.anime.model.AnimeContent
-import com.jycra.filmaico.domain.anime.model.AnimeSeason
+import com.jycra.filmaico.core.ui.feature.media.model.UiMediaDetail
+import com.jycra.filmaico.domain.media.model.MediaType
 
 sealed interface AnimeDetailUiState {
     data object Loading : AnimeDetailUiState
-    data class Success(
-        val anime: Anime,
-        val selectedSeason: AnimeSeason,
-        val contentsForSeason: List<AnimeContent>
-    ) : AnimeDetailUiState
+    data class Success(val detail: UiMediaDetail) : AnimeDetailUiState
     data class Error(val message: String) : AnimeDetailUiState
 }
 
 sealed interface AnimeDetailUiEvent {
-    data class OnSeasonSelected(val season: AnimeSeason) : AnimeDetailUiEvent
-    data class OnContentClick(
-        val content: AnimeContent,
+    data class OnSeasonSelected(val seasonId: String) : AnimeDetailUiEvent
+    data class PlayAsset(
+        val mediaType: MediaType,
+        val assetId: String,
         val index: Int = 0
     ) : AnimeDetailUiEvent
-    object OnBackPressed : AnimeDetailUiEvent
+    data object OnBackPressed : AnimeDetailUiEvent
 }
 
 sealed interface AnimeDetailUiEffect {
-    data class NavigateToPlayer(val animeId: String) : AnimeDetailUiEffect
-    object NavigateBack : AnimeDetailUiEffect
+    data class PlayAsset(val mediaType: MediaType, val assetId: String) : AnimeDetailUiEffect
+    data object NavigateBack : AnimeDetailUiEffect
 }

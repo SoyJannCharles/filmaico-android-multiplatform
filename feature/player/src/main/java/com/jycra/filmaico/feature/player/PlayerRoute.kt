@@ -10,7 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.jycra.filmaico.core.navigation.Platform
+import com.jycra.filmaico.core.device.Platform
 
 @Composable
 fun PlayerRoute(
@@ -20,14 +20,10 @@ fun PlayerRoute(
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    val isVisible by viewModel.isPlayerVisible.collectAsStateWithLifecycle()
-    val shouldMountPlayer by viewModel.shouldMountPlayer.collectAsStateWithLifecycle()
-
     val lifecycleOwner = LocalLifecycleOwner.current
 
     BackHandler(enabled = true) {
-        viewModel.onNavigateBack()
+        viewModel.onEvent(PlayerUiEvent.OnBackClick)
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -35,10 +31,10 @@ fun PlayerRoute(
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_PAUSE -> {
-                    viewModel.onPause()
+                    viewModel.onEvent(PlayerUiEvent.OnLifecyclePause)
                 }
                 Lifecycle.Event.ON_RESUME -> {
-                    viewModel.onResume()
+                    viewModel.onEvent(PlayerUiEvent.OnLifecycleResume)
                 }
                 else -> {}
             }
@@ -53,12 +49,12 @@ fun PlayerRoute(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.eventFlow.collect { event ->
+        viewModel.effect.collect { event ->
             when (event) {
-                is PlayerUiEvent.NavigateBack -> {
+                is PlayerUiEffect.NavigateBack -> {
                     onNavigateBack(null)
                 }
-                is PlayerUiEvent.NavigateBackWithError -> {
+                is PlayerUiEffect.ShowError -> {
                     onNavigateBack(event.message)
                 }
             }
@@ -68,13 +64,8 @@ fun PlayerRoute(
     PlayerScreen(
         uiState = uiState,
         platform = platform,
-        isVisible = isVisible,
-        shouldMountPlayer = shouldMountPlayer,
         exoPlayer = viewModel.playerManager.exoPlayer,
-        onPlayerViewReady = { viewModel.onPlayerViewReady() },
-        onGetVideoQualities = { viewModel.getAvailableQualities() },
-        onVideoQualityChange = { quality -> viewModel.changeVideoQuality(quality) },
-        onNavigateBack = { viewModel.onNavigateBack() }
+        onEvent = { event -> viewModel.onEvent(event) }
     )
 
 }

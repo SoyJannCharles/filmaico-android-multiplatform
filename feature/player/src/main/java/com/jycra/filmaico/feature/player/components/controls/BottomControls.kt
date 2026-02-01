@@ -25,17 +25,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jycra.filmaico.core.navigation.Platform
+import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.ui.R
+import com.jycra.filmaico.core.ui.util.formatPlaybackTime
+import com.jycra.filmaico.domain.media.model.metadata.VideoMetadata
 import com.jycra.filmaico.feature.player.PlaybackState
-import com.jycra.filmaico.feature.player.model.VideoMetadata
-import com.jycra.filmaico.feature.player.util.PlayerCallbacks
+import com.jycra.filmaico.domain.stream.util.PlayerCallbacks
 
 @Composable
 fun BottomControls(
     modifier: Modifier = Modifier,
     platform: Platform,
-    headerInfo: VideoMetadata,
+    videoMetadata: VideoMetadata,
     playbackState: PlaybackState,
     callbacks: PlayerCallbacks,
     sliderFocusRequester: FocusRequester,
@@ -47,11 +48,12 @@ fun BottomControls(
             .fillMaxWidth()
     ) {
 
-        if (!headerInfo.isLive) {
+        if (!videoMetadata.isLive) {
             PlayerSlider(
                 platform = platform,
                 currentPosition = playbackState.currentPosition,
                 totalDuration = playbackState.totalDuration,
+                isSeeking = playbackState.isSeeking,
                 onPlayPauseToggle = callbacks.onPlayPauseToggle,
                 onSeekTo = callbacks.onSeekTo,
                 focusRequester = sliderFocusRequester,
@@ -108,14 +110,26 @@ fun BottomControls(
 
             }
 
-            if (!headerInfo.isLive) {
-                Text(
-                    modifier = Modifier
-                        .padding(start = 8.dp, bottom = 4.dp),
-                    text = "${formatTime(playbackState.currentPosition)} / ${formatTime(playbackState.totalDuration)}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(0.7f)
-                )
+            if (!videoMetadata.isLive) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        modifier = Modifier
+                            .padding(start = 8.dp),
+                        text = "${formatPlaybackTime(playbackState.currentPosition)} / ${
+                            formatPlaybackTime(
+                                playbackState.totalDuration
+                            )
+                        }",
+                        style = if (platform == Platform.MOBILE) {
+                            MaterialTheme.typography.labelMedium
+                        } else {
+                            MaterialTheme.typography.labelLarge
+                        },
+                        color = Color.White.copy(0.7f)
+                    )
+                }
             } else {
                 Row(
                     modifier = Modifier
@@ -133,7 +147,7 @@ fun BottomControls(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        text = "EN VIVO",
+                        text = "En Vivo",
                         color = Color.White,
                         style = if (platform == Platform.MOBILE) {
                             MaterialTheme.typography.bodySmall
@@ -151,11 +165,17 @@ fun BottomControls(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 
                 IconButton(
-                    onClick = callbacks.onSettingsClick
+                    onClick = callbacks.onToggleSaved
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_subtitles),
-                        contentDescription = "Subtítulos"
+                        painter = if (videoMetadata.isSaved)
+                            painterResource(R.drawable.ic_bookmark_filled)
+                        else
+                            painterResource(R.drawable.ic_bookmark_border),
+                        contentDescription = if (videoMetadata.isSaved)
+                            "Quitar de Mi Lista"
+                        else
+                            "Guardar en Mi Lista"
                     )
                 }
 

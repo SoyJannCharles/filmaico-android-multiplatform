@@ -2,7 +2,6 @@ package com.jycra.filmaico.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jycra.filmaico.core.navigation.ContentType
 import com.jycra.filmaico.domain.user.usecase.GetCurrentUserUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -56,16 +55,27 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onEvent(event: HomeUiEvent) {
+
         viewModelScope.launch {
-            val effectToSend = when (event) {
-                is HomeUiEvent.OnAnimeClick -> HomeUiEffect.NavigateToDetail(ContentType.ANIME, event.animeId)
-                is HomeUiEvent.OnSerieClick -> HomeUiEffect.NavigateToDetail(ContentType.SERIE, event.serieId)
-                is HomeUiEvent.OnMovieClick -> HomeUiEffect.NavigateToDetail(ContentType.MOVIE, event.movieId)
-                is HomeUiEvent.OnChannelClick -> HomeUiEffect.NavigateToPlayer(ContentType.CHANNEL, event.channelId)
+
+            when (event) {
+                is HomeUiEvent.OpenDetail -> {
+                    _effect.send(HomeUiEffect.OpenDetail(
+                        mediaType = event.mediaType,
+                        containerId = event.containerId
+                    ))
+                }
+                is HomeUiEvent.PlayAsset -> {
+                    _effect.send(HomeUiEffect.PlayAsset(
+                        mediaType = event.mediaType,
+                        assetId = event.assetId
+                    ))
+                }
                 is HomeUiEvent.OnProfileClick -> HomeUiEffect.NavigateToProfile
             }
-            _effect.send(effectToSend)
+
         }
+
     }
 
 }

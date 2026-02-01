@@ -70,19 +70,34 @@
     <string name="home_topbar_label_search">Search…</string>
     <string name="home_topbar_profile_icon_content_description">Open profile</string>
 
-    <string name="bottomnav_item_home">Home</string>
-    <string name="bottomnav_item_search">Search</string>
-    <string name="bottomnav_item_mylist">My List</string>
-    <string name="bottomnav_item_profile">My Profile</string>
+    <string name="bottombar_item_home">Home</string>
+    <string name="bottombar_item_search">Search</string>
+    <string name="bottombar_item_saved">Saved</string>
+    <string name="bottombar_item_profile">My Profile</string>
 
-    <string name="railnav_item_search">Search</string>
-    <string name="railnav_item_home">Home</string>
-    <string name="railnav_item_mylist">My List</string>
-    <string name="railnav_item_movies">Movies</string>
-    <string name="railnav_item_series">Series</string>
-    <string name="railnav_item_channels">Channels</string>
-    <string name="railnav_item_animes">Animes</string>
-    <string name="railnav_item_profile">My Profile</string>
+    <string name="sidebar_item_search">Search</string>
+    <string name="sidebar_item_home">Home</string>
+    <string name="sidebar_item_saved">Saved</string>
+    <string name="sidebar_item_more">More</string>
+
+    <string name="sidebar_item_return">Return</string>
+    <string name="sidebar_item_movies">Movies</string>
+    <string name="sidebar_item_series">Series</string>
+    <string name="sidebar_item_channels">Channels</string>
+    <string name="sidebar_item_animes">Animes</string>
+
+    <string name="sidebar_item_profile">My Profile</string>
+
+    <string name="sidebar_subscription_card_label">Your subscription expires on:</string>
+
+    <string name="subscription_expired">Expired</string>
+    <string name="subscription_mins">%1$d min</string>
+    <string name="subscription_hours">%1$d hs</string>
+    <string name="subscription_days">%1$d days</string>
+    <string name="subscription_month">1 month</string>
+    <string name="subscription_months">%1$d months</string>
+    <string name="subscription_year">1 year</string>
+    <string name="subscription_years">%1$d years</string>
 
     <string name="moviedetail_button_play">Play</string>
 
@@ -108,6 +123,14 @@
     <string name="content_status_finished">Finished</string>
     <string name="content_status_on_hiatus">On Hiatus</string>
     <string name="content_status_unknown">Unknown</string>
+
+    <string name="account_title">Your account</string>
+    <string name="account_profile_settings_title">Profile Settings</string>
+    <string name="account_profile_settings_subtitle">Here you can control your personal data and your subscription.</string>
+    <string name="account_devices_settings_title">Device Settings</string>
+    <string name="account_devices_settings_subtitle">Here you can control all active devices on your account.</string>
+    <string name="account_signout_title">Sign Out</string>
+    <string name="account_signout_subtitle">We hope you enjoyed your time here, and we look forward to seeing you soon with more content.</string>
 
     <string name="ui_component_image_blurred_content_description">Blurred image</string>
 

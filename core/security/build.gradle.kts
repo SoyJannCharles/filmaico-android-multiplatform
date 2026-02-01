@@ -9,5 +9,4 @@ android {
 
 dependencies {
     implementation(project(":core:config"))
-    implementation(project(":domain:channel"))
 }

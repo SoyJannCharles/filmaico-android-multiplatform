@@ -11,7 +11,6 @@ android {
 
 dependencies {
     implementation(project(":data:user"))
-    implementation(project(":data:channel"))
     implementation(project(":data:stream"))
 }
 

@@ -5,12 +5,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jycra.filmaico.core.ui.util.focus.BrowseFocusState
-import com.jycra.filmaico.domain.movie.usecase.GetMovieContentUseCase
+import com.jycra.filmaico.core.ui.feature.media.util.mapper.toUiCarousels
+import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
+import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.media.usecase.GetMediaContentUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
@@ -20,44 +21,60 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MovieViewModel @Inject constructor(
-    private val getMovieContentUseCase: GetMovieContentUseCase
+    private val getMediaContentUseCase: GetMediaContentUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MovieUiState>(MovieUiState.Loading)
-    val uiState: StateFlow<MovieUiState> = _uiState.asStateFlow()
+    val uiState = _uiState.asStateFlow()
 
     private val _effect = Channel<MovieUiEffect>()
     val effect = _effect.receiveAsFlow()
 
-    var browseFocusState by mutableStateOf(BrowseFocusState())
+    var mediaFocusState by mutableStateOf(MediaFocusState())
         private set
 
     init {
-        getMovieContent()
+        observeContent()
     }
 
-    private fun getMovieContent() {
+    private fun observeContent() {
         viewModelScope.launch {
-            getMovieContentUseCase()
+            getMediaContentUseCase(mediaType = MediaType.MOVIE)
                 .onStart { _uiState.value = MovieUiState.Loading }
                 .catch { e -> _uiState.value = MovieUiState.Error(e.message ?: "Ocurrió un error") }
                 .collect { carousels ->
-                    _uiState.value = MovieUiState.Success(carousels)
+                    _uiState.value = MovieUiState.Success(
+                        carousels = carousels.map { carousel ->
+                            carousel.toUiCarousels()
+                        }
+                    )
                 }
         }
     }
 
     fun onEvent(event: MovieUiEvent) {
         when (event) {
-            is MovieUiEvent.OnMovieClick -> {
-                browseFocusState = browseFocusState.copy(
+            is MovieUiEvent.OpenDetail -> {
+                mediaFocusState = mediaFocusState.copy(
                     lastFocusedCarouselIndex = event.carouselIndex,
-                    lastFocusedContentIndex = event.movieIndex,
+                    lastFocusedContentIndex = event.contentIndex,
                     shouldRestoreFocus = false
                 )
                 viewModelScope.launch {
                     _effect.send(
-                        MovieUiEffect.NavigateToDetail(event.movieId)
+                        MovieUiEffect.OpenDetail(containerId = event.containerId)
+                    )
+                }
+            }
+            is MovieUiEvent.PlayAsset -> {
+                mediaFocusState = mediaFocusState.copy(
+                    lastFocusedCarouselIndex = event.carouselIndex,
+                    lastFocusedContentIndex = event.contentIndex,
+                    shouldRestoreFocus = false
+                )
+                viewModelScope.launch {
+                    _effect.send(
+                        MovieUiEffect.PlayAsset(mediaType = event.mediaType, assetId = event.assetId)
                     )
                 }
             }
@@ -65,20 +82,20 @@ class MovieViewModel @Inject constructor(
     }
 
     fun onScreenResumed() {
-        browseFocusState = browseFocusState.copy(
+        mediaFocusState = mediaFocusState.copy(
             shouldRestoreFocus = true
         )
     }
 
     fun saveFocusPosition(carouselIndex: Int, contentIndex: Int) {
-        browseFocusState = browseFocusState.copy(
+        mediaFocusState = mediaFocusState.copy(
             lastFocusedCarouselIndex = carouselIndex,
             lastFocusedContentIndex = contentIndex
         )
     }
 
     fun markInitialFocusConsumed() {
-        browseFocusState = browseFocusState.copy(
+        mediaFocusState = mediaFocusState.copy(
             lastFocusedCarouselIndex = 0,
             lastFocusedContentIndex = 0,
             hasConsumedInitialFocus = true,
@@ -87,7 +104,7 @@ class MovieViewModel @Inject constructor(
     }
 
     fun markFocusRestored() {
-        browseFocusState = browseFocusState.copy(shouldRestoreFocus = false)
+        mediaFocusState = mediaFocusState.copy(shouldRestoreFocus = false)
     }
 
 }

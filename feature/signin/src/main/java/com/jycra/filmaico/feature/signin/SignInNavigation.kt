@@ -3,26 +3,23 @@ package com.jycra.filmaico.feature.signin
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import com.jycra.filmaico.core.navigation.Platform
 import com.jycra.filmaico.core.navigation.route.AppRoutes
 
 fun NavGraphBuilder.signInRoute(
-    platform: Platform,
     onNavigateToSignUp: () -> Unit,
-    onNavigateToPay: () -> Unit,
+    onNavigateToSubscription: () -> Unit,
     onNavigateToMain: () -> Unit
 ) {
     composable(route = AppRoutes.SIGN_IN) {
         SignInRoute(
-            platform = platform,
             onNavigateToSignUp = onNavigateToSignUp,
-            onNavigateToPay = onNavigateToPay,
-            onNavigateToHome = onNavigateToMain
+            onNavigateToSubscription = onNavigateToSubscription,
+            onNavigateToMain = onNavigateToMain
         )
     }
 }
 
-fun NavController.navigateToSignIn() {
+fun NavController.navigateToAuth() {
     navigate(route = AppRoutes.SIGN_IN) {
         popUpTo(route = AppRoutes.SPLASH) {
             inclusive = true
@@ -30,9 +27,17 @@ fun NavController.navigateToSignIn() {
     }
 }
 
-fun NavController.navigateToSignInAfterCancel() {
+fun NavController.navigateToAuthAfterCancel() {
     navigate(route = AppRoutes.SIGN_IN) {
-        popUpTo(route = AppRoutes.PAY) {
+        popUpTo(route = AppRoutes.SUBSCRIPTION) {
+            inclusive = true
+        }
+    }
+}
+
+fun NavController.navigateToAuthAfterSignOut() {
+    navigate(route = AppRoutes.SIGN_IN) {
+        popUpTo(route = AppRoutes.MAIN) {
             inclusive = true
         }
     }

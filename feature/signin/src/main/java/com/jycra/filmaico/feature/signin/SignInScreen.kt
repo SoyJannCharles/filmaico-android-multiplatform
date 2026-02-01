@@ -11,34 +11,28 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.jycra.filmaico.core.navigation.Platform
+import com.jycra.filmaico.core.ui.R
 import com.jycra.filmaico.core.ui.component.FilmaicoLogo
+import com.jycra.filmaico.core.ui.feature.auth.ActionLink
 import com.jycra.filmaico.feature.signin.component.SignInForm
-import com.jycra.filmaico.feature.signin.component.SignUpActionLink
 
 @Composable
 fun SignInScreen(
     uiState: SignInUiState,
-    platform: Platform,
     onEvent: (SignInUiEvent) -> Unit
 ) {
 
-    when (platform) {
-        Platform.MOBILE -> SignInScreenMobile(
-            uiState = uiState,
-            onEvent = onEvent
-        )
-        Platform.TV -> SignInScreenTv(
-            uiState = uiState,
-            onEvent = onEvent
-        )
-    }
+    Screen(
+        uiState = uiState,
+        onEvent = onEvent
+    )
 
 }
 
 @Composable
-private fun SignInScreenMobile(
+private fun Screen(
     uiState: SignInUiState,
     onEvent: (SignInUiEvent) -> Unit
 ) {
@@ -71,8 +65,10 @@ private fun SignInScreenMobile(
                     onEvent = onEvent
                 )
 
-                SignUpActionLink(
-                    onEvent = onEvent
+                ActionLink(
+                    questionText = stringResource(R.string.signin_text_no_account),
+                    actionText = stringResource(R.string.signin_link_go_to_signup),
+                    onActionClick = { onEvent(SignInUiEvent.SignUpTriggered) }
                 )
 
             }
@@ -80,18 +76,5 @@ private fun SignInScreenMobile(
         }
 
     }
-
-}
-
-@Composable
-private fun SignInScreenTv(
-    uiState: SignInUiState,
-    onEvent: (SignInUiEvent) -> Unit
-) {
-
-    SignInScreenMobile(
-        uiState = uiState,
-        onEvent = onEvent
-    )
 
 }

@@ -9,9 +9,10 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:device"))
     implementation(project(":core:ui"))
-    implementation(project(":core:navigation"))
-    implementation(project(":domain:serie"))
+    implementation(project(":domain:common"))
+    implementation(project(":domain:media"))
 }
 
 addCoil()

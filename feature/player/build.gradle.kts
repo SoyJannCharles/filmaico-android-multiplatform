@@ -9,14 +9,15 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:ui"))
+    implementation(project(":core:device"))
     implementation(project(":core:navigation"))
+    implementation(project(":core:ui"))
     implementation(project(":core:reporter"))
     implementation(project(":core:player"))
-    implementation(project(":domain:movie"))
-    implementation(project(":domain:serie"))
-    implementation(project(":domain:channel"))
-    implementation(project(":domain:anime"))
+    implementation(project(":domain:history"))
+    implementation(project(":domain:common"))
+    implementation(project(":domain:stream"))
+    implementation(project(":domain:media"))
 }
 
 addMedia3()

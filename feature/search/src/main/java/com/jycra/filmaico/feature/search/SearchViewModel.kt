@@ -6,18 +6,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jycra.filmaico.core.navigation.ContentType
-import com.jycra.filmaico.core.ui.util.focus.BrowseFocusState
-import com.jycra.filmaico.domain.search.usecase.SearchUseCase
-import com.jycra.filmaico.feature.search.model.SearchResult
-import com.jycra.filmaico.feature.search.util.toUiCarousels
+import com.jycra.filmaico.core.ui.feature.media.util.mapper.toUiCarousels
+import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
+import com.jycra.filmaico.domain.media.usecase.SearchAllMediaUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -29,7 +26,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val searchUseCase: SearchUseCase
+    private val searchAllMediaUseCase: SearchAllMediaUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -38,50 +35,35 @@ class SearchViewModel @Inject constructor(
     private val _effect = Channel<SearchUiEffect>()
     val effect = _effect.receiveAsFlow()
 
-    var browseFocusState by mutableStateOf(BrowseFocusState())
+    var mediaFocusState by mutableStateOf(MediaFocusState(
+        hasConsumedInitialFocus = true,
+        shouldRestoreFocus = false
+    ))
         private set
 
     init {
         viewModelScope.launch {
-            _uiState
+            uiState
                 .map { it.searchQuery }
                 .distinctUntilChanged()
-                .debounce(2000L)
+                .debounce(500L)
                 .flatMapLatest { query ->
                     if (query.isBlank()) {
-                        flowOf(SearchResult.Empty)
+                        flowOf(emptyList())
                     } else {
-                        flow<SearchResult> {
-                            emit(SearchResult.Loading)
-                            val carousels = searchUseCase(query)
-                                .first()
-                                .toUiCarousels()
-                            emit(SearchResult.Success(carousels))
+                        flow {
+                            _uiState.update { it.copy(isLoading = true) }
+
+                            val resultsMap = searchAllMediaUseCase(query)
+                            emit(resultsMap.toUiCarousels())
                         }
                     }
                 }
-                .collect { result ->
+                .collect { carousels ->
                     _uiState.update {
-                        when (result) {
-                            is SearchResult.Loading -> it.copy(isLoading = true)
-                            is SearchResult.Success -> it.copy(
-                                carousels = result.carousels,
-                                isLoading = false
-                            )
-                            is SearchResult.Empty -> it.copy(
-                                carousels = emptyList(),
-                                isLoading = false
-                            )
-                        }
-                    }
-
-                    // Resetear foco cuando llegan nuevos resultados
-                    if (result is SearchResult.Success && result.carousels.isNotEmpty()) {
-                        browseFocusState = browseFocusState.copy(
-                            lastFocusedCarouselIndex = 0,
-                            lastFocusedContentIndex = 0,
-                            hasConsumedInitialFocus = true,
-                            shouldRestoreFocus = false
+                        it.copy(
+                            results = carousels,
+                            isLoading = false
                         )
                     }
                 }
@@ -90,63 +72,36 @@ class SearchViewModel @Inject constructor(
 
     fun onEvent(event: SearchUiEvent) {
         when (event) {
-            is SearchUiEvent.OnQueryChange -> handleQueryChange(event.query)
-            is SearchUiEvent.OnChannelClick -> handleContentClick(
-                ContentType.CHANNEL,
-                event.channelId,
-                event.carouselIndex,
-                event.contentIndex
-            )
-
-            is SearchUiEvent.OnMovieClick -> handleContentClick(
-                ContentType.MOVIE,
-                event.movieId,
-                event.carouselIndex,
-                event.contentIndex
-            )
-
-            is SearchUiEvent.OnSerieClick -> handleContentClick(
-                ContentType.SERIE,
-                event.serieId,
-                event.carouselIndex,
-                event.contentIndex
-            )
-
-            is SearchUiEvent.OnAnimeClick -> handleContentClick(
-                ContentType.ANIME,
-                event.animeId,
-                event.carouselIndex,
-                event.contentIndex
-            )
-        }
-    }
-
-    private fun handleQueryChange(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
-    }
-
-    private fun handleContentClick(
-        contentType: String,
-        contentId: String,
-        carouselIndex: Int,
-        contentIndex: Int
-    ) {
-        viewModelScope.launch {
-            saveFocusPosition(carouselIndex, contentIndex)
-            if (contentType == ContentType.CHANNEL) {
-                _effect.send(
-                    SearchUiEffect.NavigateToPlayer(
-                        contentType = contentType,
-                        contentId = contentId,
-                    )
+            is SearchUiEvent.OnQueryChange -> {
+                _uiState.update { it.copy(searchQuery = event.query) }
+            }
+            is SearchUiEvent.OpenDetail -> {
+                mediaFocusState = mediaFocusState.copy(
+                    lastFocusedCarouselId = event.carouselId,
+                    lastFocusedCarouselIndex = event.carouselIndex,
+                    lastFocusedContentIndex = event.contentIndex,
+                    shouldRestoreFocus = false
                 )
-            } else {
-                _effect.send(
-                    SearchUiEffect.NavigateToDetail(
-                        contentType = contentType,
-                        contentId = contentId
-                    )
+                viewModelScope.launch {
+                    _effect.send(SearchUiEffect.OpenDetail(
+                            mediaType = event.mediaType,
+                            containerId = event.containerId
+                    ))
+                }
+            }
+            is SearchUiEvent.PlayAsset -> {
+                mediaFocusState = mediaFocusState.copy(
+                    lastFocusedCarouselId = event.carouselId,
+                    lastFocusedCarouselIndex = event.carouselIndex,
+                    lastFocusedContentIndex = event.contentIndex,
+                    shouldRestoreFocus = false
                 )
+                viewModelScope.launch {
+                    _effect.send(SearchUiEffect.PlayAsset(
+                        mediaType = event.mediaType,
+                        assetId = event.assetId
+                    ))
+                }
             }
         }
     }
@@ -156,21 +111,20 @@ class SearchViewModel @Inject constructor(
     }
 
     fun requestInitialBrowseFocus() {
-        browseFocusState = browseFocusState.copy(
+        mediaFocusState = mediaFocusState.copy(
             shouldRestoreFocus = true
         )
-        Log.d("SearchViewModel", "Requesting initial focus: $browseFocusState")
     }
 
     fun saveFocusPosition(carouselIndex: Int, contentIndex: Int) {
-        browseFocusState = browseFocusState.copy(
+        mediaFocusState = mediaFocusState.copy(
             lastFocusedCarouselIndex = carouselIndex,
             lastFocusedContentIndex = contentIndex
         )
     }
 
     fun markInitialFocusConsumed() {
-        browseFocusState = browseFocusState.copy(
+        mediaFocusState = mediaFocusState.copy(
             lastFocusedCarouselIndex = 0,
             lastFocusedContentIndex = 0,
             hasConsumedInitialFocus = true,
@@ -179,7 +133,10 @@ class SearchViewModel @Inject constructor(
     }
 
     fun markFocusRestored() {
-        browseFocusState = browseFocusState.copy(shouldRestoreFocus = false)
+        mediaFocusState = mediaFocusState.copy(
+            lastFocusedCarouselId = null,
+            shouldRestoreFocus = false
+        )
     }
 
 }

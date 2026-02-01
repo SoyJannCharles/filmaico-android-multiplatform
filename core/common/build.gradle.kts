@@ -9,8 +9,4 @@ android {
     namespace = "com.jycra.filmaico.core.common"
 }
 
-dependencies {
-
-}
-
 addGson()

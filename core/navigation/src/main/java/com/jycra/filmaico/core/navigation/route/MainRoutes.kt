@@ -4,12 +4,14 @@ object MainRoutes {
 
     const val HOME = "home"
     const val SEARCH = "search"
-    const val MY_LIST = "myList"
-    const val PROFILE = "profile"
+    const val SAVES = "myList"
+    const val MORE = "more"
 
     const val MOVIES = "movies"
     const val SERIES = "series"
     const val CHANNELS = "channels"
     const val ANIME = "anime"
+
+    const val PROFILE = "profile"
 
 }

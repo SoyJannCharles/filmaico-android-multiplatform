@@ -12,11 +12,10 @@ android {
 
 dependencies {
     implementation(project(":data:user"))
-    implementation(project(":data:movie"))
-    implementation(project(":data:serie"))
-    implementation(project(":data:channel"))
-    implementation(project(":data:anime"))
+    implementation(project(":data:history"))
+    implementation(project(":data:media"))
     implementation(project(":data:stream"))
+    implementation(project(":domain:media"))
 }
 
 addRoom()

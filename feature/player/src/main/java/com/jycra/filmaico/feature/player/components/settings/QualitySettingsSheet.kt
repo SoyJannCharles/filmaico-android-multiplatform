@@ -27,7 +27,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.jycra.filmaico.core.player.VideoQuality
+import com.jycra.filmaico.core.player.model.VideoQuality
 import com.jycra.filmaico.core.ui.R
 
 @Composable
@@ -35,8 +35,7 @@ fun QualitySettingsSheet(
     focusRequester: FocusRequester,
     qualities: List<VideoQuality>,
     currentQuality: VideoQuality?,
-    onQualitySelected: (VideoQuality) -> Unit,
-    onBack: () -> Unit // <--- Nuevo parámetro para volver al menú principal
+    onQualitySelected: (VideoQuality) -> Unit
 ) {
 
     Column(
@@ -72,16 +71,21 @@ private fun QualitySheetHeader(
     currentQuality: VideoQuality?,
     modifier: Modifier = Modifier
 ) {
+
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
+
+        val displayText = if (currentQuality?.isAuto == true) "Auto" else "${currentQuality?.height ?: "Auto"}p"
+
         Text(
-            text = "Calidad de Video · ${currentQuality?.height ?: "Auto"}p",
+            text = "Calidad de Video · $displayText",
             style = MaterialTheme.typography.bodyLarge,
             color = Color.White
         )
     }
+
 }
 
 @Composable

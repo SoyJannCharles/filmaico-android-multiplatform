@@ -15,12 +15,10 @@ import com.jycra.filmaico.domain.user.error.AuthError
 import com.jycra.filmaico.domain.user.model.User
 import com.jycra.filmaico.domain.user.repository.AuthRepository
 import com.jycra.filmaico.domain.user.util.AuthResult
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
@@ -31,7 +29,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val deviceIdProvider: DeviceIdProvider
 ) : AuthRepository {
 
-    override suspend fun signUp(email: String, password: String): AuthResult<Unit, AuthError> {
+    override suspend fun registerAccount(email: String, password: String): AuthResult<Unit, AuthError> {
         return when (val authResult = authSource.signUpWithEmail(email, password)) {
             is AuthResult.Success -> {
                 when (val addUserResult = userSource.addUser(authResult.data.uid, email)) {
@@ -49,7 +47,7 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun signIn(email: String, password: String): AuthResult<Unit, AuthError> {
+    override suspend fun authenticate(email: String, password: String): AuthResult<Unit, AuthError> {
         return when (val authResult = authSource.signInWithEmail(email, password)) {
             is AuthResult.Success -> {
                 AuthResult.Success(Unit)
@@ -84,25 +82,14 @@ class AuthRepositoryImpl @Inject constructor(
 
     }
 
+    override suspend fun signOutLocal() {
+        authSource.signOut()
+        sessionStore.clearSessionId()
+    }
+
     override suspend fun getCurrentUser(): User? {
         val account = authSource.getCurrentUser() ?: return null
         return userSource.getUser(account.uid)?.toDomain()
-    }
-
-    override fun listenToSubscriptionStatus(): Flow<Boolean> {
-
-        val uid = authSource.getCurrentUser()?.uid
-        if (uid == null) {
-            return flowOf(false)
-        }
-
-        val userReference = userSource.getUserReference(uid)
-
-        return userReference.snapshots().map { documentSnapshot ->
-            val userDto = documentSnapshot.toObject<UserDto>()
-            userDto?.subscription?.isActive() == true
-        }
-
     }
 
     override suspend fun hasActiveSubscription(): Boolean {
@@ -111,13 +98,54 @@ class AuthRepositoryImpl @Inject constructor(
         )?.subscription?.isActive() == true
     }
 
-    override suspend fun saveCurrentDeviceSession(): AuthResult<Unit, AuthError> {
+    override fun observeSessionStatus(): Flow<Boolean> {
+
+        val uid = authSource.getCurrentUser()?.uid ?: return flowOf(false)
+        val currentDeviceId = deviceIdProvider.getDeviceId()
+
+        val userReference = userSource.getUserReference(uid)
+
+        return userReference.snapshots().map { documentSnapshot ->
+
+            val userDto = documentSnapshot.toObject<UserDto>()
+
+            val isSubscriptionActive = userDto?.subscription?.isActive() == true
+            val isDeviceAuthorized = userDto?.activeSessions?.any { session ->
+                session.deviceId == currentDeviceId
+            } == true
+
+            isSubscriptionActive && isDeviceAuthorized
+
+        }.distinctUntilChanged()
+
+    }
+
+    override fun observeSubscriptionStatus(): Flow<Boolean> {
+
+        val uid = authSource.getCurrentUser()?.uid ?: return flowOf(false)
+        val userReference = userSource.getUserReference(uid)
+
+        return userReference.snapshots().map { documentSnapshot ->
+
+            val userDto = documentSnapshot.toObject<UserDto>()
+
+            val isActive = userDto?.subscription?.isActive() == true
+
+            isActive
+
+        }.distinctUntilChanged()
+
+    }
+
+    override suspend fun registerDeviceSession(): AuthResult<Unit, AuthError> {
 
         val uid = authSource.getCurrentUser()?.uid
             ?: return AuthResult.Failure(AuthError.UserNotFound)
         val currentDeviceId = deviceIdProvider.getDeviceId()
 
-        return userSource.updateSessionsAtomically(uid) { userDto ->
+        var sessionIdToSave: String? = null
+
+        val result = userSource.updateSessionsAtomically(uid) { userDto ->
 
             val currentSessions = userDto.activeSessions.toMutableList()
             val maxDevices = userDto.subscription.maxDevices
@@ -126,40 +154,42 @@ class AuthRepositoryImpl @Inject constructor(
 
             if (existingSession != null) {
 
-                val updatedSession = existingSession.copy(loginDate = Timestamp.now())
-                currentSessions.remove(existingSession)
-                currentSessions.add(updatedSession)
+                sessionIdToSave = existingSession.sessionId
 
-                CoroutineScope(Dispatchers.IO).launch {
-                    sessionStore.saveSessionId(existingSession.sessionId)
-                }
+                currentSessions.remove(existingSession)
+                currentSessions.add(existingSession.copy(loginDate = Timestamp.now()))
 
             } else {
 
                 if (maxDevices > 0 && currentSessions.size >= maxDevices) {
                     currentSessions.sortBy { it.loginDate }
-                    while (currentSessions.size >= maxDevices) {
-                        currentSessions.removeAt(0)
-                    }
+                    while (currentSessions.size >= maxDevices) currentSessions.removeAt(0)
                 }
 
-                val newSessionId = UUID.randomUUID().toString()
-                val newSession = SessionDto(
-                    sessionId = newSessionId,
-                    loginDate = Timestamp.now(),
-                    deviceInfo = "${Build.MANUFACTURER} ${Build.MODEL}",
-                    deviceId = currentDeviceId
+                sessionIdToSave = UUID.randomUUID().toString()
+                currentSessions.add(
+                    SessionDto(
+                        sessionId = sessionIdToSave,
+                        loginDate = Timestamp.now(),
+                        deviceInfo = "${Build.MANUFACTURER} ${Build.MODEL}",
+                        deviceId = currentDeviceId
+                    )
                 )
-                currentSessions.add(newSession)
-
-                CoroutineScope(Dispatchers.IO).launch {
-                    sessionStore.saveSessionId(newSessionId)
-                }
 
             }
 
             currentSessions
 
+        }
+
+        return when (result) {
+            is AuthResult.Success -> {
+                sessionIdToSave?.let { id ->
+                    sessionStore.saveSessionId(sessionId = id)
+                }
+                AuthResult.Success(Unit)
+            }
+            is AuthResult.Failure -> result
         }
 
     }

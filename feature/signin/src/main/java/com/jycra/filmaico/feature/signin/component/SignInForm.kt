@@ -45,7 +45,7 @@ fun SignInForm(
 
         FormTextField(
             value = uiState.email,
-            onValueChange = { onEvent(SignInUiEvent.OnEmailChange(it)) },
+            onValueChange = { onEvent(SignInUiEvent.EmailChanged(it)) },
             label = stringResource(R.string.signin_label_email),
             isError = uiState.error != null
         )
@@ -55,7 +55,7 @@ fun SignInForm(
         FormTextField(
             visualTransformation = PasswordVisualTransformation(),
             value = uiState.password,
-            onValueChange = { onEvent(SignInUiEvent.OnPasswordChange(it)) },
+            onValueChange = { onEvent(SignInUiEvent.PasswordChanged(it)) },
             label = stringResource(R.string.signin_label_password),
             isError = uiState.error != null
         )
@@ -97,7 +97,7 @@ fun SignInForm(
                 .fillMaxWidth(),
             enabled = !uiState.isLoading,
             shape = RoundedCornerShape(8.dp),
-            onClick = { onEvent(SignInUiEvent.OnSignInClick) },
+            onClick = { onEvent(SignInUiEvent.SignInTriggered) },
         ) {
 
             if (!uiState.isLoading)

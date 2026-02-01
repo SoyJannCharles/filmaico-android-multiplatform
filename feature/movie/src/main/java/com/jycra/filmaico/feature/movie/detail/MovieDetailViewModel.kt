@@ -3,7 +3,8 @@ package com.jycra.filmaico.feature.movie.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jycra.filmaico.domain.movie.usecase.GetMovieByIdUseCase
+import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.media.usecase.GetMediaContainerUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,11 +15,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MovieDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
-    private val getMovieByIdUseCase: GetMovieByIdUseCase
+    private val getMediaContainerUseCase: GetMediaContainerUseCase,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val movieId: String = checkNotNull(savedStateHandle["movieId"])
+    private val containerId: String = checkNotNull(savedStateHandle["containerId"])
 
     private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -27,37 +28,33 @@ class MovieDetailViewModel @Inject constructor(
     val effect = _effect.receiveAsFlow()
 
     init {
-        loadMovieDetails()
+        loadDetails()
     }
 
-    private fun loadMovieDetails() {
-        _uiState.value = MovieDetailUiState.Loading
+    private fun loadDetails() {
         viewModelScope.launch {
-            val movie = getMovieByIdUseCase(movieId)
-            if (movie != null) {
-                _uiState.value = MovieDetailUiState.Success(movie = movie)
-            } else {
-                _uiState.value = MovieDetailUiState.Error("No se pudo encontrar la pelicula.")
+            getMediaContainerUseCase(containerId, MediaType.MOVIE).collect { container ->
+                if (container != null) {
+                    _uiState.value = MovieDetailUiState.Success(media = container)
+                } else {
+                    _uiState.value = MovieDetailUiState.Error("No se pudo encontrar la película.")
+                }
             }
         }
     }
 
     fun onEvent(event: MovieDetailUiEvent) {
         when (event) {
-            is MovieDetailUiEvent.OnStartPlayback -> navigateToPlayer(event.movie.id)
-            is MovieDetailUiEvent.OnBackPressed -> navigateBack()
-        }
-    }
-
-    private fun navigateToPlayer(movieId: String) {
-        viewModelScope.launch {
-            _effect.send(MovieDetailUiEffect.NavigateToPlayer(movieId))
-        }
-    }
-
-    private fun navigateBack() {
-        viewModelScope.launch {
-            _effect.send(MovieDetailUiEffect.NavigateBack)
+            is MovieDetailUiEvent.PlayAsset -> {
+                viewModelScope.launch {
+                    _effect.send(MovieDetailUiEffect.NavigateToPlayer(containerId))
+                }
+            }
+            is MovieDetailUiEvent.OnBackPressed -> {
+                viewModelScope.launch {
+                    _effect.send(MovieDetailUiEffect.NavigateBack)
+                }
+            }
         }
     }
 

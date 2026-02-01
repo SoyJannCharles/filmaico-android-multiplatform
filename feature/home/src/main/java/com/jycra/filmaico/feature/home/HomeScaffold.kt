@@ -12,8 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import com.jycra.filmaico.core.navigation.Platform
+import com.jycra.filmaico.core.device.Platform
+import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.feature.anime.AnimeRoute
 import com.jycra.filmaico.feature.channel.ChannelRoute
 import com.jycra.filmaico.feature.home.common.HomeTabs
@@ -62,44 +62,66 @@ fun HomeScaffoldMobile(
                 modifier = Modifier.fillMaxSize(),
                 userScrollEnabled = false
             ) { pageIndex ->
+
                 when(tabs[pageIndex]) {
                     HomeTabs.ALL -> ChannelRoute(
                         platform = platform,
                         contentPadding = contentPadding,
-                        onChannelClick = { channelId -> onEvent(HomeUiEvent.OnChannelClick(channelId)) }
+                        onPlayAsset = { assetId -> onEvent(HomeUiEvent.PlayAsset(
+                            mediaType = MediaType.CHANNEL,
+                            assetId = assetId
+                        )) }
                     )
                     HomeTabs.MOVIES -> MovieRoute(
                         platform = platform,
                         contentPadding = contentPadding,
-                        onFocusLeft = {
-                            FocusRequester.Default
-                        },
-                        onMovieClick = { movieId -> onEvent(HomeUiEvent.OnMovieClick(movieId)) }
+                        onOpenDetail = { containerId -> onEvent(HomeUiEvent.OpenDetail(
+                            mediaType = MediaType.MOVIE,
+                            containerId = containerId
+                        )) },
+                        onPlayAsset = { mediaType, assetId -> onEvent(HomeUiEvent.PlayAsset(
+                            mediaType = mediaType,
+                            assetId = assetId
+                        )) }
                     )
                     HomeTabs.SERIES -> SerieRoute(
                         platform = platform,
                         contentPadding = contentPadding,
-                        onFocusLeft = {
-                            FocusRequester.Default
-                        },
-                        onSerieClick = { serieId -> onEvent(HomeUiEvent.OnSerieClick(serieId)) }
+                        onOpenDetail = { containerId -> onEvent(HomeUiEvent.OpenDetail(
+                            mediaType = MediaType.SERIE,
+                            containerId = containerId
+                        )) },
+                        onPlayAsset = { mediaType, assetId -> onEvent(HomeUiEvent.PlayAsset(
+                            mediaType = mediaType,
+                            assetId = assetId
+                        )) }
                     )
                     HomeTabs.CHANNELS -> ChannelRoute(
                         platform = platform,
                         contentPadding = contentPadding,
-                        onChannelClick = { channelId -> onEvent(HomeUiEvent.OnChannelClick(channelId)) }
+                        onPlayAsset = { assetId -> onEvent(HomeUiEvent.PlayAsset(
+                            mediaType = MediaType.CHANNEL,
+                            assetId = assetId
+                        )) }
                     )
                     HomeTabs.ANIME -> AnimeRoute(
                         platform = platform,
                         contentPadding = contentPadding,
-                        onFocusLeft = {
-                            FocusRequester.Default
-                        },
-                        onAnimeClick = { animeId -> onEvent(HomeUiEvent.OnAnimeClick(animeId)) }
+                        onOpenDetail = { containerId -> onEvent(HomeUiEvent.OpenDetail(
+                            mediaType = MediaType.ANIME,
+                            containerId = containerId
+                        )) },
+                        onPlayAsset = { mediaType, assetId -> onEvent(HomeUiEvent.PlayAsset(
+                            mediaType = mediaType,
+                            assetId = assetId
+                        )) }
                     )
                 }
+
             }
+
         }
+
     }
 
 }

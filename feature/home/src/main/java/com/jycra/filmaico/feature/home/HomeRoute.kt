@@ -6,16 +6,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.jycra.filmaico.core.navigation.Platform
+import com.jycra.filmaico.core.device.Platform
+import com.jycra.filmaico.domain.media.model.MediaType
 
 @Composable
 fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
     platform: Platform,
-    mainScaffoldPadding: PaddingValues,
-    onNavigateToDetail: (contentType: String, contentId: String) -> Unit,
-    onNavigateToPlayer: (contentType: String, contentId: String) -> Unit,
-    onNavigateToProfile: () -> Unit
+    contentPadding: PaddingValues,
+    onOpenDetail: (mediaType: MediaType, containerId: String) -> Unit,
+    onPlayAsset: (mediaType: MediaType, assetId: String) -> Unit,
+    onNavigateToProfile: () -> Unit = {}
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -23,11 +24,11 @@ fun HomeRoute(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is HomeUiEffect.NavigateToDetail -> {
-                    onNavigateToDetail(effect.contentType, effect.contentId)
+                is HomeUiEffect.OpenDetail -> {
+                    onOpenDetail(effect.mediaType, effect.containerId)
                 }
-                is HomeUiEffect.NavigateToPlayer -> {
-                    onNavigateToPlayer(effect.contentType, effect.contentId)
+                is HomeUiEffect.PlayAsset -> {
+                    onPlayAsset(effect.mediaType, effect.assetId)
                 }
                 is HomeUiEffect.NavigateToProfile -> onNavigateToProfile()
             }
@@ -37,8 +38,8 @@ fun HomeRoute(
     HomeScaffoldMobile(
         uiState = uiState,
         platform = platform,
-        mainScaffoldPadding = mainScaffoldPadding,
-        onEvent = viewModel::onEvent // Pasamos la función onEvent para que los hijos la usen
+        mainScaffoldPadding = contentPadding,
+        onEvent = viewModel::onEvent
     )
 
 }

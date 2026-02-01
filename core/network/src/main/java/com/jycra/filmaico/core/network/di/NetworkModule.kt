@@ -9,10 +9,8 @@ import com.jycra.filmaico.core.network.NetworkConnectivityObserver
 import com.jycra.filmaico.core.network.ScrapingServiceImpl
 import com.jycra.filmaico.core.network.api.AttrStreamApiService
 import com.jycra.filmaico.core.network.cookies.AppCookieJar
-import com.jycra.filmaico.core.network.typeconverter.StreamTypeAdapter
 import com.jycra.filmaico.data.stream.data.service.AttrStreamService
 import com.jycra.filmaico.data.stream.data.service.ScrapingService
-import com.jycra.filmaico.domain.stream.model.Stream
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -33,29 +31,26 @@ abstract class NetworkModule {
     @Binds
     @Singleton
     abstract fun bindAttrStreamService(
-        attrStreamServiceImpl: AttrStreamServiceImpl
+        impl: AttrStreamServiceImpl
     ): AttrStreamService
 
     @Binds
     @Singleton
     abstract fun bindScrapingService(
-        scrapingServiceImpl: ScrapingServiceImpl
+        impl: ScrapingServiceImpl
     ): ScrapingService
 
     @Binds
     @Singleton
     abstract fun bindConnectivityObserver(
-        networkConnectivityObserver: NetworkConnectivityObserver
+        impl: NetworkConnectivityObserver
     ): ConnectivityObserver
 
     companion object {
 
         @Provides
         @Singleton
-        fun provideGson(): Gson =
-            GsonBuilder()
-                .registerTypeAdapter(Stream::class.java, StreamTypeAdapter())
-                .create()
+        fun provideGson(): Gson = GsonBuilder().create()
 
         @Provides
         @Singleton

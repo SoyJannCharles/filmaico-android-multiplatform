@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface ScrapingService {
 
-    fun extractStreamM3u8Url(playerUrl: String): Flow<String>
+    fun extractStreamUri(iframeUrl: String): Flow<String>
 
     suspend fun extractStreamUrl(
         scrapeUrl: String,

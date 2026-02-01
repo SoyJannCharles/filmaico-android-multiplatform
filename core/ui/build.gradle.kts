@@ -11,12 +11,11 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:navigation"))
+    implementation(project(":core:device"))
+    implementation(project(":core:network"))
+    implementation(project(":domain:common"))
+    implementation(project(":domain:media"))
     implementation(project(":domain:user"))
-    implementation(project(":domain:movie"))
-    implementation(project(":domain:serie"))
-    implementation(project(":domain:channel"))
-    implementation(project(":domain:anime"))
 }
 
 addTv()

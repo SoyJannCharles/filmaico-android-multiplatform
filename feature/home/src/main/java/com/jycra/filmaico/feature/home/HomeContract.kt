@@ -1,5 +1,7 @@
 package com.jycra.filmaico.feature.home
 
+import com.jycra.filmaico.domain.media.model.MediaType
+
 sealed interface HomeUiState {
     data object Loading : HomeUiState
     data class Success(
@@ -9,15 +11,13 @@ sealed interface HomeUiState {
 }
 
 sealed interface HomeUiEvent {
-    data class OnAnimeClick(val animeId: String) : HomeUiEvent
-    data class OnSerieClick(val serieId: String) : HomeUiEvent
-    data class OnMovieClick(val movieId: String) : HomeUiEvent
-    data class OnChannelClick(val channelId: String) : HomeUiEvent
+    data class OpenDetail(val mediaType: MediaType, val containerId: String) : HomeUiEvent
+    data class PlayAsset(val mediaType: MediaType, val assetId: String) : HomeUiEvent
     data object OnProfileClick : HomeUiEvent
 }
 
 sealed interface HomeUiEffect {
-    data class NavigateToDetail(val contentType: String, val contentId: String) : HomeUiEffect
-    data class NavigateToPlayer(val contentType: String, val contentId: String) : HomeUiEffect
+    data class OpenDetail(val mediaType: MediaType, val containerId: String) : HomeUiEffect
+    data class PlayAsset(val mediaType: MediaType, val assetId: String) : HomeUiEffect
     data object NavigateToProfile : HomeUiEffect
 }

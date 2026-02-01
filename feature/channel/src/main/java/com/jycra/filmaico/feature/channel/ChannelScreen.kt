@@ -1,66 +1,121 @@
 package com.jycra.filmaico.feature.channel
 
-import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.jycra.filmaico.core.navigation.Platform
-import com.jycra.filmaico.core.ui.feature.browse.BrowseCarousel
-import com.jycra.filmaico.core.ui.feature.browse.model.UiBrowseCarousel
-import com.jycra.filmaico.core.ui.feature.browse.model.UiBrowseCarouselItem
-import com.jycra.filmaico.core.ui.feature.browse.util.CardOrientation
-import com.jycra.filmaico.domain.channel.model.ChannelCarousel
-import com.jycra.filmaico.core.ui.util.focus.BrowseFocusCallbacks
-import com.jycra.filmaico.core.ui.util.focus.BrowseFocusState
+import com.jycra.filmaico.core.device.Platform
+import com.jycra.filmaico.core.ui.feature.media.MediaCarousel
+import com.jycra.filmaico.core.ui.feature.media.model.UiMediaCarousel
+import com.jycra.filmaico.core.ui.feature.media.util.variant.MediaCardVariant
+import com.jycra.filmaico.core.ui.util.shimmer.ShimmerMediaCard
+import com.jycra.filmaico.core.ui.util.focus.MediaFocusCallbacks
+import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
 import com.jycra.filmaico.core.ui.util.focus.FocusBeacon
-import com.jycra.filmaico.domain.channel.model.localizedName
-import com.jycra.filmaico.domain.channel.model.localizedTitle
+import com.jycra.filmaico.core.ui.util.shimmer.rememberShimmerBrush
 
 @Composable
 fun ChannelScreen(
     uiState: ChannelUiState,
     platform: Platform,
     contentPadding: PaddingValues,
-    browseFocusState: BrowseFocusState,
-    browseFocusCallbacks: BrowseFocusCallbacks,
+    mediaFocusState: MediaFocusState,
+    mediaFocusCallbacks: MediaFocusCallbacks,
     contentFocusBeacon: FocusRequester? = null,
     onEvent: (ChannelUiEvent) -> Unit
 ) {
 
     when (uiState) {
         is ChannelUiState.Loading -> {
-
+            LoadingScreen(
+                platform = platform,
+                contentPadding = contentPadding
+            )
         }
         is ChannelUiState.Success -> {
             Screen(
                 platform = platform,
                 contentPadding = contentPadding,
                 carousels = uiState.carousels,
-                browseFocusState = browseFocusState,
-                browseFocusCallbacks = browseFocusCallbacks,
+                mediaFocusState = mediaFocusState,
+                mediaFocusCallbacks = mediaFocusCallbacks,
                 contentFocusBeacon = contentFocusBeacon,
-                onChannelClick = { channelId, carouselIndex, channelIndex ->
-                    onEvent(
-                        ChannelUiEvent.OnChannelClick(
-                            channelId,
-                            carouselIndex,
-                            channelIndex
-                        )
-                    )
+                onPlayAsset = { assetId, carouselIndex, contentIndex ->
+                    onEvent(ChannelUiEvent.PlayAsset(assetId, carouselIndex, contentIndex))
                 }
             )
         }
         is ChannelUiState.Error -> {
-            Log.d("ChannelScreen", "Error: ${uiState.message}")
+
         }
+    }
+
+}
+
+@Composable
+private fun LoadingScreen(
+    platform: Platform,
+    contentPadding: PaddingValues
+) {
+
+    LazyColumn(
+        contentPadding = when (platform) {
+            Platform.MOBILE -> contentPadding
+            Platform.TV -> PaddingValues(
+                start = contentPadding.calculateStartPadding(LayoutDirection.Ltr),
+                top = 32.dp,
+                bottom = 32.dp
+            )
+        }
+    ) {
+
+        items(3) {
+
+            Column(modifier = Modifier.padding(bottom = 24.dp)) {
+
+                Box(
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .width(120.dp)
+                        .height(20.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(rememberShimmerBrush())
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(5) {
+                        ShimmerMediaCard(platform = platform, variant = MediaCardVariant.BACKDROP_HORIZONTAL)
+                    }
+                }
+
+            }
+
+        }
+
     }
 
 }
@@ -69,11 +124,11 @@ fun ChannelScreen(
 private fun Screen(
     platform: Platform,
     contentPadding: PaddingValues,
-    carousels: List<ChannelCarousel>,
-    browseFocusState: BrowseFocusState? = null,
-    browseFocusCallbacks: BrowseFocusCallbacks? = null,
+    carousels: List<UiMediaCarousel>,
+    mediaFocusState: MediaFocusState? = null,
+    mediaFocusCallbacks: MediaFocusCallbacks? = null,
     contentFocusBeacon: FocusRequester? = null,
-    onChannelClick: (String, Int, Int) -> Unit,
+    onPlayAsset: (mediaId: String, carouselIndex: Int, contentIndex: Int) -> Unit,
 ) {
 
     val lazyColumnState = rememberLazyListState()
@@ -102,7 +157,7 @@ private fun Screen(
             contentType = { _, carousel -> carousel.title }
         ) { carouselIndex, carousel ->
 
-            val carouselModifier = if (platform == Platform.TV) {
+            val cardModifier = if (platform == Platform.TV) {
 
                 val isTopRow = carouselIndex == 0
                 val isBottomRow = carouselIndex == carousels.lastIndex
@@ -114,26 +169,17 @@ private fun Screen(
 
             } else Modifier
 
-            BrowseCarousel(
-                modifier = carouselModifier,
+            MediaCarousel(
+                modifier = cardModifier,
                 platform = platform,
                 contentPadding = contentPadding,
-                orientation = CardOrientation.HORIZONTAL,
-                carousel = UiBrowseCarousel(
-                    id = carousel.id,
-                    title = carousel.localizedTitle,
-                    content = carousel.channels.map { channel ->
-                        UiBrowseCarouselItem(
-                            id = channel.id,
-                            name = channel.localizedName,
-                            imageUrl = channel.iconUrl
-                        )
-                    }
-                ),
+                carousel = carousel,
                 carouselIndex = carouselIndex,
-                browseFocusState = browseFocusState,
-                browseFocusCallbacks = browseFocusCallbacks,
-                onContentClick = onChannelClick
+                mediaFocusState = mediaFocusState,
+                mediaFocusCallbacks = mediaFocusCallbacks,
+                onContentClick = { assetId, mediaType, carouselIndex, contentIndex ->
+                    onPlayAsset(assetId, carouselIndex, contentIndex)
+                }
             )
 
         }
@@ -141,10 +187,11 @@ private fun Screen(
     }
 
     if (platform == Platform.TV && contentFocusBeacon != null &&
-        browseFocusState != null && browseFocusCallbacks != null) {
+        mediaFocusState != null && mediaFocusCallbacks != null
+    ) {
         FocusBeacon(
             focusRequester = contentFocusBeacon,
-            browseFocusCallbacks = browseFocusCallbacks
+            mediaFocusCallbacks = mediaFocusCallbacks
         )
     }
 

@@ -10,13 +10,13 @@ data class SignUpUiState(
 )
 
 sealed interface SignUpUiEvent {
-    data class OnEmailChange(val email: String) : SignUpUiEvent
-    data class OnPasswordChange(val password: String) : SignUpUiEvent
-    data object OnSignUpClick : SignUpUiEvent
-    data object OnSignInClick : SignUpUiEvent
+    data class EmailChange(val email: String) : SignUpUiEvent
+    data class PasswordChange(val password: String) : SignUpUiEvent
+    data object SignUpTriggered : SignUpUiEvent
+    data object SignInTriggered : SignUpUiEvent
 }
 
 sealed interface SignUpUiEffect {
-    data object NavigateToPay : SignUpUiEffect
-    data object NavigateToSignIn : SignUpUiEffect
+    data object NavigateToSubscription : SignUpUiEffect
+    data object NavigateToAuth : SignUpUiEffect
 }

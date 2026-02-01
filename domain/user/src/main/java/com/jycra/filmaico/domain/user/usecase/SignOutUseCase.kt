@@ -4,9 +4,10 @@ import com.jycra.filmaico.domain.user.repository.AuthRepository
 import javax.inject.Inject
 
 class SignOutUseCase @Inject constructor(
-    private val authRepository: AuthRepository
+    private val repository: AuthRepository
 ) {
 
-    suspend operator fun invoke() = authRepository.signOut()
+    suspend operator fun invoke() =
+        repository.signOut()
 
 }

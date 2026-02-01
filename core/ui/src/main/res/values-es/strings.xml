@@ -70,21 +70,36 @@
     <string name="home_topbar_label_search">Buscar…</string>
     <string name="home_topbar_profile_icon_content_description">Abrir perfil</string>
 
-    <string name="bottomnav_item_home">Inicio</string>
-    <string name="bottomnav_item_search">Buscar</string>
-    <string name="bottomnav_item_mylist">Mi Lista</string>
-    <string name="bottomnav_item_profile">Mi Perfil</string>
+    <string name="bottombar_item_home">Inicio</string>
+    <string name="bottombar_item_search">Buscar</string>
+    <string name="bottombar_item_saved">Mi Lista</string>
+    <string name="bottombar_item_profile">Mi Perfil</string>
 
-    <string name="railnav_item_search">Buscar</string>
-    <string name="railnav_item_home">Inicio</string>
-    <string name="railnav_item_mylist">Mi Lista</string>
-    <string name="railnav_item_movies">Peliculas</string>
-    <string name="railnav_item_series">Series</string>
-    <string name="railnav_item_channels">Canales</string>
-    <string name="railnav_item_animes">Animes</string>
-    <string name="railnav_item_profile">Mi Perfil</string>
+    <string name="sidebar_item_search">Buscar</string>
+    <string name="sidebar_item_home">Inicio</string>
+    <string name="sidebar_item_saved">Mi Lista</string>
+    <string name="sidebar_item_more">Más</string>
 
-    <string name="moviedetail_button_play">Reproducir</string>
+    <string name="sidebar_item_return">Volver</string>
+    <string name="sidebar_item_movies">Peliculas</string>
+    <string name="sidebar_item_series">Series</string>
+    <string name="sidebar_item_channels">Canales</string>
+    <string name="sidebar_item_animes">Animes</string>
+
+    <string name="sidebar_item_profile">Mi Perfil</string>
+
+    <string name="sidebar_subscription_card_label">Tu subscripción expira en:</string>
+
+    <string name="subscription_expired">Expirado</string>
+    <string name="subscription_mins">%1$d min</string>
+    <string name="subscription_hours">%1$d hs</string>
+    <string name="subscription_days">%1$d días</string>
+    <string name="subscription_month">1 mes</string>
+    <string name="subscription_months">%1$d meses</string>
+    <string name="subscription_year">1 año</string>
+    <string name="subscription_years">%1$d años</string>
+
+    <string name="moviedetail_button_play">Ver</string>
 
     <string name="seriedetail_text_seasons">Temporadas</string>
     <string name="seriedetail_text_episodes">Episodios</string>
@@ -108,6 +123,14 @@
     <string name="content_status_finished">Finalizado</string>
     <string name="content_status_on_hiatus">En Pausa</string>
     <string name="content_status_unknown">Desconocido</string>
+
+    <string name="account_title">Tu cuenta</string>
+    <string name="account_profile_settings_title">Configuración del perfil</string>
+    <string name="account_profile_settings_subtitle">Aquí podrás controlar tus datos personales y tu suscripción.</string>
+    <string name="account_devices_settings_title">Configuración de los dispositivos</string>
+    <string name="account_devices_settings_subtitle">Aquí puedes controlar todos los dispositivos activos en tu cuenta.</string>
+    <string name="account_signout_title">Cerrar Sesión</string>
+    <string name="account_signout_subtitle">Esperamos que hayas disfrutado de tu tiempo aquí y esperamos verte pronto con más contenido.</string>
 
     <string name="ui_component_image_blurred_content_description">Imagen desenfocada</string>
 

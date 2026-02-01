@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.jycra.filmaico.core.ui.R
-import com.jycra.filmaico.feature.player.model.VideoMetadata
-import com.jycra.filmaico.feature.player.util.PlayerCallbacks
+import com.jycra.filmaico.domain.media.model.metadata.VideoMetadata
+import com.jycra.filmaico.domain.stream.util.PlayerCallbacks
 
 @Composable
 fun CenterControls(

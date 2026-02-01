@@ -1,39 +1,34 @@
 package com.jycra.filmaico.feature.search
 
-import com.jycra.filmaico.core.ui.feature.search.UiSearchCarousel
+import com.jycra.filmaico.core.ui.feature.media.model.UiMediaCarousel
+import com.jycra.filmaico.domain.media.model.MediaType
 
 data class SearchUiState(
     val isLoading: Boolean = false,
     val searchQuery: String = "",
-    val carousels: List<UiSearchCarousel> = emptyList()
+    val results: List<UiMediaCarousel> = emptyList(),
+    val error: String? = null
 )
 
 sealed interface SearchUiEvent {
     data class OnQueryChange(val query: String) : SearchUiEvent
-    data class OnChannelClick(
-        val channelId: String,
+    data class OpenDetail(
+        val containerId: String,
+        val mediaType: MediaType,
+        val carouselId: String,
         val carouselIndex: Int = 0,
         val contentIndex: Int = 0
     ) : SearchUiEvent
-    data class OnMovieClick(
-        val movieId: String,
+    data class PlayAsset(
+        val assetId: String,
+        val mediaType: MediaType,
+        val carouselId: String,
         val carouselIndex: Int = 0,
         val contentIndex: Int = 0
     ) : SearchUiEvent
-    data class OnSerieClick(
-        val serieId: String,
-        val carouselIndex: Int = 0,
-        val contentIndex: Int = 0
-    ) : SearchUiEvent
-    data class OnAnimeClick(
-        val animeId: String,
-        val carouselIndex: Int = 0,
-        val contentIndex: Int = 0
-    ) : SearchUiEvent
-
 }
 
 sealed interface SearchUiEffect {
-    data class NavigateToPlayer(val contentType: String, val contentId: String) : SearchUiEffect
-    data class NavigateToDetail(val contentType: String, val contentId: String) : SearchUiEffect
+    data class OpenDetail(val mediaType: MediaType, val containerId: String) : SearchUiEffect
+    data class PlayAsset(val mediaType: MediaType, val assetId: String) : SearchUiEffect
 }

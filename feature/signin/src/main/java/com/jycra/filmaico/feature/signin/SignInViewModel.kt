@@ -3,7 +3,8 @@ package com.jycra.filmaico.feature.signin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jycra.filmaico.domain.user.usecase.HasActiveSubscriptionUseCase
-import com.jycra.filmaico.domain.user.usecase.SignInUseCase
+import com.jycra.filmaico.domain.user.usecase.RegisterDeviceSessionUseCase
+import com.jycra.filmaico.domain.user.usecase.AuthenticateUserUseCase
 import com.jycra.filmaico.domain.user.util.AuthResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -16,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SignInViewModel @Inject constructor(
-    private val signInUseCase: SignInUseCase,
+    private val authenticateUserUseCase: AuthenticateUserUseCase,
+    private val registerDeviceSessionUseCase: RegisterDeviceSessionUseCase,
     private val hasActiveSubscriptionUseCase: HasActiveSubscriptionUseCase
 ) : ViewModel() {
 
@@ -28,14 +30,12 @@ class SignInViewModel @Inject constructor(
 
     fun onEvent(event: SignInUiEvent) {
         when (event) {
-            is SignInUiEvent.OnEmailChange -> _uiState.update {
-                it.copy(email = event.email)
-            }
-            is SignInUiEvent.OnPasswordChange -> _uiState.update {
-                it.copy(password = event.password)
-            }
-            SignInUiEvent.OnSignInClick -> signIn()
-            SignInUiEvent.OnSignUpClick -> signUp()
+            is SignInUiEvent.EmailChanged ->
+                _uiState.update { it.copy(email = event.email, error = null) }
+            is SignInUiEvent.PasswordChanged ->
+                _uiState.update { it.copy(password = event.password, error = null) }
+            SignInUiEvent.SignInTriggered -> signIn()
+            SignInUiEvent.SignUpTriggered -> signUp()
         }
     }
 
@@ -48,33 +48,28 @@ class SignInViewModel @Inject constructor(
 
         viewModelScope.launch {
 
-            _uiState.update { state ->
-                state.copy(isLoading = true, error = null)
-            }
+            _uiState.update { state -> state.copy(isLoading = true, error = null) }
 
-            val result = signInUseCase(email, password)
-
-            _uiState.update { state ->
-                state.copy(isLoading = false)
-            }
-
+            val result = authenticateUserUseCase(email, password)
             when (result) {
-                is AuthResult.Success -> checkSubscriptionAndNavigate()
-                is AuthResult.Failure -> _uiState.update { it.copy(error = result.failure) }
+                is AuthResult.Success -> {
+                    try {
+                        registerDeviceSessionUseCase()
+                        if (hasActiveSubscriptionUseCase()) {
+                            _effect.send(SignInUiEffect.NavigateToMain)
+                        } else {
+                            _effect.send(SignInUiEffect.NavigateToSubscription)
+                        }
+                    } catch (e: Exception) {
+
+                    }
+                }
+                is AuthResult.Failure ->
+                    _uiState.update { it.copy(isLoading = false, error = result.failure) }
             }
 
         }
 
-    }
-
-    private fun checkSubscriptionAndNavigate() {
-        viewModelScope.launch {
-            if (hasActiveSubscriptionUseCase()) {
-                _effect.send(SignInUiEffect.NavigateToHome)
-            } else {
-                _effect.send(SignInUiEffect.NavigateToPay)
-            }
-        }
     }
 
     private fun signUp() {

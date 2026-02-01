@@ -33,6 +33,7 @@ fun SettingsMenuItem(
     icon: Painter,
     text: String,
     hasSubmenu: Boolean = true,
+    onDismiss: () -> Unit,
     onClick: () -> Unit
 ) {
 

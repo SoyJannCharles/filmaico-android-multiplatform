@@ -1,13 +1,13 @@
 package com.jycra.filmaico.feature.splash
 
 sealed interface SplashUiState {
-    data object Loading : SplashUiState
-    data object NoNetwork : SplashUiState
-    data class UpdateRequired(val oldVersion: String, val newVersion: String) : SplashUiState
+    data object Cheking : SplashUiState
+    data class UpdateRequired(val currentVersion: String, val serverVersion: String) : SplashUiState
+    data class Error(val message: String) : SplashUiState
 }
 
 sealed interface SplashUiEffect {
-    data object NavigateToSignIn : SplashUiEffect
-    data object NavigateToPay : SplashUiEffect
-    data object NavigateToHome : SplashUiEffect
+    data object NavigateToAuth : SplashUiEffect
+    data object NavigateToSubscription : SplashUiEffect
+    data object NavigateToMain : SplashUiEffect
 }
