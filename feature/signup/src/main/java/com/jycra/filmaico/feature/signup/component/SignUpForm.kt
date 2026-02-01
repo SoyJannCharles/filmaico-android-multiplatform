@@ -46,7 +46,7 @@ fun SignUpForm(
 
         FormTextField(
             value = uiState.email,
-            onValueChange = { onEvent(SignUpUiEvent.OnEmailChange(it)) },
+            onValueChange = { onEvent(SignUpUiEvent.EmailChange(it)) },
             label = stringResource(R.string.signup_label_email),
             isError = uiState.error != null
         )
@@ -56,7 +56,7 @@ fun SignUpForm(
         FormTextField(
             visualTransformation = PasswordVisualTransformation(),
             value = uiState.password,
-            onValueChange = { onEvent(SignUpUiEvent.OnPasswordChange(it)) },
+            onValueChange = { onEvent(SignUpUiEvent.PasswordChange(it)) },
             label = stringResource(R.string.signup_label_password),
             isError = uiState.error != null
         )
@@ -98,7 +98,7 @@ fun SignUpForm(
                 .fillMaxWidth(),
             enabled = !uiState.isLoading,
             shape = RoundedCornerShape(8.dp),
-            onClick = { onEvent(SignUpUiEvent.OnSignUpClick) },
+            onClick = { onEvent(SignUpUiEvent.SignUpTriggered) },
         ) {
 
             if (!uiState.isLoading)

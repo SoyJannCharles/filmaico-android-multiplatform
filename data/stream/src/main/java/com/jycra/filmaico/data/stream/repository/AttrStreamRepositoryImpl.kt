@@ -5,15 +5,12 @@ import android.util.Log
 import com.google.gson.Gson
 import com.jycra.filmaico.core.config.ConfigSource
 import com.jycra.filmaico.core.security.DecryptionManager
-import com.jycra.filmaico.data.stream.data.dao.DrmKeyDao
 import com.jycra.filmaico.data.stream.data.service.AttrStreamService
-import com.jycra.filmaico.data.stream.data.service.KeysService
 import com.jycra.filmaico.data.stream.data.store.CookieStore
 import com.jycra.filmaico.data.stream.data.store.JwtStore
-import com.jycra.filmaico.data.stream.entity.DrmKeyEntity
+import com.jycra.filmaico.domain.media.model.stream.DrmKeys
+import com.jycra.filmaico.domain.media.model.stream.Key
 import com.jycra.filmaico.domain.stream.repository.AttrStreamRepository
-import com.jycra.filmaico.domain.stream.model.DrmKeys
-import com.jycra.filmaico.domain.stream.model.Key
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -23,13 +20,10 @@ import kotlin.collections.firstOrNull
 
 class AttrStreamRepositoryImpl @Inject constructor(
     private val configSource: ConfigSource,
+    private val attrStreamService: AttrStreamService,
     private val jwtStore: JwtStore,
     private val cookieStore: CookieStore,
-    private val attrStreamService: AttrStreamService,
-    private val drmKeyService: KeysService,
-    private val drmKeyDao: DrmKeyDao,
-    private val decryptionManager: DecryptionManager,
-    private val gson: Gson
+    private val decryptionManager: DecryptionManager
 ) : AttrStreamRepository {
 
     private val jwtUrl: String by lazy {
@@ -81,34 +75,32 @@ class AttrStreamRepositoryImpl @Inject constructor(
         val body = response.body()?.string()
             ?: throw Exception("JWT response body es null")
 
-        // Parsear JSON: {"jwt": "eyJ..."}
         val jwtMap = Gson().fromJson(body, Map::class.java)
         val jwt = jwtMap?.get("jwt") as? String
             ?: throw Exception("JWT no encontrado en respuesta")
 
-        // Extraer "exp" del payload
         val exp = extractExpFromJwt(jwt)
 
-        // Guardar en caché
         jwtStore.saveJwt(jwt, exp)
 
         return jwt
+
     }
 
     private fun extractExpFromJwt(jwt: String): Long {
+
         try {
+
             val parts = jwt.split(".")
             if (parts.size < 2) {
                 throw Exception("JWT inválido: formato incorrecto")
             }
 
-            // Decodificar payload (segunda parte)
             val payloadJson = String(
                 android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE),
                 Charsets.UTF_8
             )
 
-            // Parsear y extraer "exp"
             val payload = Gson().fromJson(payloadJson, Map::class.java) as? Map<String, Any>
             val exp = payload?.get("exp")
 
@@ -117,13 +109,15 @@ class AttrStreamRepositoryImpl @Inject constructor(
                 is Number -> exp.toLong()
                 else -> 0L
             }
+
         } catch (e: Exception) {
-            Log.e("AttrStreamRepo", "Error decodificando exp del JWT", e)
             return 0L
         }
+
     }
 
     private suspend fun getCdnToken(videoUrl: String, jwt: String): String {
+
         val encodedUrl = Uri.encode(videoUrl)
         val tokenUrl = "$cdnTokenUrl$encodedUrl"
 
@@ -141,10 +135,10 @@ class AttrStreamRepositoryImpl @Inject constructor(
         val body = response.body()?.string()
             ?: throw Exception("CDN token response body es null")
 
-        // Parsear: {"token": "abc123xyz"}
         val tokenMap = Gson().fromJson(body, Map::class.java) as? Map<String, Any>
         return tokenMap?.get("token") as? String
             ?: throw Exception("Token no encontrado en respuesta")
+
     }
 
     override suspend fun getCookies(
@@ -167,7 +161,6 @@ class AttrStreamRepositoryImpl @Inject constructor(
             cookieString
 
         } catch (e: Exception) {
-            Log.i("AttrStreamRepository", "Error: ${e.message}")
             null
         }
 
@@ -193,36 +186,6 @@ class AttrStreamRepositoryImpl @Inject constructor(
 
         return DrmKeys(keys = decryptedKeys)
 
-    }
-
-    override suspend fun getDrmKeyFromRemote(channelId: String): DrmKeys? {
-        return drmKeyService.getDrmKey(channelId)
-    }
-
-    override suspend fun saveDrmKeyToRemote(
-        channelId: String,
-        keys: DrmKeys
-    ) {
-        drmKeyService.saveDrmKey(channelId, keys)
-    }
-
-    override suspend fun getCachedDrmKey(contentId: String): DrmKeys? {
-        val drm = drmKeyDao.getDrmKey(contentId) ?: return null
-        return gson.fromJson(drm.keyJson, DrmKeys::class.java)
-    }
-
-    override suspend fun saveDrmKeyToCache(contentId: String, keys: DrmKeys) {
-        drmKeyDao.saveDrmKey(
-            DrmKeyEntity(
-                contentId = contentId,
-                keyJson = gson.toJson(keys),
-                cacheTimestamp = System.currentTimeMillis()
-            )
-        )
-    }
-
-    override suspend fun invalidateDrmKeyCache(contentId: String) {
-        drmKeyDao.invalidateDrmKey(contentId)
     }
 
 }

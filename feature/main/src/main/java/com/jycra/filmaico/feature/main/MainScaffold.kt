@@ -1,6 +1,8 @@
 package com.jycra.filmaico.feature.main
 
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,27 +25,67 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.jycra.filmaico.core.navigation.Platform
+import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.navigation.route.MainRoutes
 import com.jycra.filmaico.core.ui.component.navigation.bottom.BottomNav
 import com.jycra.filmaico.core.ui.component.navigation.bottom.BottomNavItem
+import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.feature.anime.AnimeRoute
 import com.jycra.filmaico.feature.channel.ChannelRoute
 import com.jycra.filmaico.feature.home.HomeRoute
 import com.jycra.filmaico.feature.main.common.MobileNavItems
-import com.jycra.filmaico.feature.main.common.TvNavItems
-import com.jycra.filmaico.feature.main.component.TvSideNavigation
+import com.jycra.filmaico.feature.main.common.NavItems
+import com.jycra.filmaico.feature.main.internal.Sidebar
 import com.jycra.filmaico.feature.movie.MovieRoute
+import com.jycra.filmaico.feature.panel.PanelRoute
+import com.jycra.filmaico.feature.saves.SavesRoute
 import com.jycra.filmaico.feature.search.SearchRoute
 import com.jycra.filmaico.feature.serie.SerieRoute
 import kotlinx.coroutines.android.awaitFrame
 
 @Composable
+fun MainScaffold(
+    uiState: MainUiState,
+    platform: Platform,
+    onNavigateToDetail: (mediaType: MediaType, contentId: String) -> Unit,
+    onNavigateToPlayer: (mediaType: MediaType, assetId: String) -> Unit,
+    onNavigateToAuth: () -> Unit
+) {
+
+    when (uiState) {
+        is MainUiState.Loading -> {
+
+        }
+        is MainUiState.Success -> {
+            when (platform) {
+                Platform.MOBILE -> MainScaffoldMobile(
+                    platform = platform,
+                    onNavigateToDetail = onNavigateToDetail,
+                    onNavigateToPlayer = onNavigateToPlayer,
+                    onNavigateToAuth = onNavigateToAuth
+                )
+                Platform.TV -> MainScaffoldTv(
+                    platform = platform,
+                    expirationText = uiState.expirationText.asString(),
+                    onNavigateToDetail = onNavigateToDetail,
+                    onNavigateToPlayer = onNavigateToPlayer,
+                    onNavigateToAuth = onNavigateToAuth
+                )
+            }
+        }
+        is MainUiState.Error -> {
+
+        }
+    }
+
+}
+
+@Composable
 fun MainScaffoldMobile(
     platform: Platform,
-    onNavigateToDetail: (contentType: String, contentId: String) -> Unit,
-    onNavigateToPlayer: (contentType: String, contentId: String) -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToDetail: (mediaType: MediaType, contentId: String) -> Unit,
+    onNavigateToPlayer: (mediaType: MediaType, assetId: String) -> Unit,
+    onNavigateToAuth: () -> Unit
 ) {
 
     val navController = rememberNavController()
@@ -75,44 +117,41 @@ fun MainScaffoldMobile(
     ) { innerPadding ->
 
         NavHost(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainerLowest),
             navController = navController,
-            startDestination = MainRoutes.HOME,
-            modifier = Modifier.
-                fillMaxSize()
+            startDestination = MainRoutes.HOME
         ) {
 
             composable(MainRoutes.HOME) {
                 HomeRoute(
                     platform = platform,
-                    mainScaffoldPadding = innerPadding,
-                    onNavigateToDetail = onNavigateToDetail,
-                    onNavigateToPlayer = onNavigateToPlayer,
-                    onNavigateToProfile = onNavigateToProfile
+                    contentPadding = innerPadding,
+                    onOpenDetail = onNavigateToDetail,
+                    onPlayAsset = onNavigateToPlayer,
                 )
             }
             composable(MainRoutes.SEARCH) {
                 SearchRoute(
                     platform = platform,
-                    onNavigateToPlayer = onNavigateToPlayer,
-                    onNavigateToDetail = onNavigateToDetail
+                    onPlayAsset = onNavigateToPlayer,
+                    onOpenDetail = onNavigateToDetail
                 )
             }
-            composable(MainRoutes.MY_LIST) {
-                HomeRoute(
+            composable(MainRoutes.SAVES) {
+                SavesRoute(
                     platform = platform,
-                    mainScaffoldPadding = innerPadding,
-                    onNavigateToDetail = onNavigateToDetail,
-                    onNavigateToPlayer = onNavigateToPlayer,
-                    onNavigateToProfile = onNavigateToProfile
+                    contentPadding = innerPadding,
+                    onOpenDetail = onNavigateToDetail,
+                    onPlayAsset = onNavigateToPlayer,
                 )
             }
             composable(MainRoutes.PROFILE) {
-                HomeRoute(
+                PanelRoute(
                     platform = platform,
-                    mainScaffoldPadding = innerPadding,
-                    onNavigateToDetail = onNavigateToDetail,
-                    onNavigateToPlayer = onNavigateToPlayer,
-                    onNavigateToProfile = onNavigateToProfile
+                    contentPadding = innerPadding,
+                    onSignOut = { onNavigateToAuth() }
                 )
             }
 
@@ -125,14 +164,30 @@ fun MainScaffoldMobile(
 @Composable
 fun MainScaffoldTv(
     platform: Platform,
-    onNavigateToDetail: (String, String) -> Unit,
-    onNavigateToPlayer: (String, String) -> Unit
+    expirationText: String,
+    onNavigateToDetail: (mediaType: MediaType, containerId: String) -> Unit,
+    onNavigateToPlayer: (mediaType: MediaType, assetId: String) -> Unit,
+    onNavigateToAuth: () -> Unit
 ) {
 
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
-    val navItems = remember { TvNavItems.entries.toList() }
+    val navItems = remember { NavItems.entries.toList() }
+
+    val mainNavItems = listOf(
+        NavItems.SEARCH,
+        NavItems.HOME,
+        NavItems.MY_LIST,
+        NavItems.MORE
+    )
+
+    val additionalNavItems = listOf(
+        NavItems.CHANNELS,
+        NavItems.MOVIES,
+        NavItems.SERIES,
+        NavItems.ANIMES
+    )
 
     val sidebarRequesters = remember {
         navItems.associate { it.route to FocusRequester() }
@@ -146,10 +201,25 @@ fun MainScaffoldTv(
 
         currentRoute ?: return@LaunchedEffect
 
-        awaitFrame()
-
         val requester = contentRequesters[currentRoute]
-        requester?.requestFocus()
+        var focusHandled = false
+
+        repeat(10) {
+
+            if (!focusHandled) {
+
+                awaitFrame()
+
+                try {
+                    requester?.requestFocus()
+                    focusHandled = true
+                } catch (e: Exception) {
+
+                }
+
+            }
+
+        }
 
     }
 
@@ -157,6 +227,7 @@ fun MainScaffoldTv(
 
     val animatedNavWidth by animateDpAsState(
         targetValue = if (isExpanded) 220.dp else 72.dp,
+        animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
         label = "NavWidth"
     )
 
@@ -165,18 +236,22 @@ fun MainScaffoldTv(
     Box(modifier = Modifier.fillMaxSize()) {
 
         NavHost(
-            navController = navController,
-            startDestination = MainRoutes.HOME,
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+            navController = navController,
+            startDestination = MainRoutes.HOME
         ) {
 
-            fun setupRoute(route: String, content: @Composable (PaddingValues, () -> Unit) -> Unit) {
+            fun setupRoute(
+                route: String,
+                sidebarTarget: String = route,
+                content: @Composable (PaddingValues, () -> Unit) -> Unit
+            ) {
                 composable(route) {
                     content(contentPadding) {
                         isExpanded = false
-                        sidebarRequesters[currentRoute]?.requestFocus()
+                        sidebarRequesters[sidebarTarget]?.requestFocus()
                     }
                 }
             }
@@ -187,8 +262,8 @@ fun MainScaffoldTv(
                     contentPadding = contentPadding,
                     onFocusLeft = onFocus,
                     contentFocusBeacon = contentRequesters[MainRoutes.SEARCH],
-                    onNavigateToPlayer = onNavigateToPlayer,
-                    onNavigateToDetail = onNavigateToDetail
+                    onOpenDetail = { mediaType, containerId -> onNavigateToDetail(mediaType, containerId) },
+                    onPlayAsset = { mediaType, assetId -> onNavigateToPlayer(mediaType, assetId) }
                 )
             }
             setupRoute(MainRoutes.HOME) { contentPadding, onFocus ->
@@ -196,64 +271,77 @@ fun MainScaffoldTv(
                     platform = platform,
                     contentPadding = contentPadding,
                     contentFocusBeacon = contentRequesters[MainRoutes.HOME],
-                    onFocusLeft = onFocus
-                ) { id -> onNavigateToPlayer("channel", id) }
+                    onFocusLeft = onFocus,
+                    onPlayAsset = { assetId -> onNavigateToPlayer(MediaType.CHANNEL, assetId) }
+                )
             }
-            setupRoute(MainRoutes.MY_LIST) { contentPadding, onFocus ->
-                ChannelRoute(
+            setupRoute(MainRoutes.SAVES) { contentPadding, onFocus ->
+                SavesRoute(
                     platform = platform,
                     contentPadding = contentPadding,
-                    contentFocusBeacon = contentRequesters[MainRoutes.MY_LIST],
-                    onFocusLeft = onFocus
-                ) { id -> onNavigateToPlayer("channel", id) }
+                    contentFocusBeacon = contentRequesters[MainRoutes.SAVES],
+                    onFocusLeft = onFocus,
+                    onOpenDetail = { mediaType, containerId -> onNavigateToDetail(mediaType, containerId) },
+                    onPlayAsset = { mediaType, assetId -> onNavigateToPlayer(mediaType, assetId) }
+                )
             }
-            setupRoute(MainRoutes.MOVIES) { contentPadding, onFocus ->
+            setupRoute(MainRoutes.MOVIES, sidebarTarget = NavItems.MORE.route) { contentPadding, onFocus ->
                 MovieRoute(
                     platform = platform,
                     contentPadding = contentPadding,
                     contentFocusBeacon = contentRequesters[MainRoutes.MOVIES],
-                    onFocusLeft = onFocus
-                ) { id -> onNavigateToPlayer("movie", id) }
+                    onFocusLeft = onFocus,
+                    onOpenDetail = { containerId -> onNavigateToDetail(MediaType.MOVIE, containerId) },
+                    onPlayAsset = { mediaType, assetId -> onNavigateToPlayer(mediaType, assetId) }
+                )
             }
-            setupRoute(MainRoutes.SERIES) { contentPadding, onFocus ->
+            setupRoute(MainRoutes.SERIES, sidebarTarget = NavItems.MORE.route) { contentPadding, onFocus ->
                 SerieRoute(
                     platform = platform,
                     contentPadding = contentPadding,
                     contentFocusBeacon = contentRequesters[MainRoutes.SERIES],
-                    onFocusLeft = onFocus
-                ) { id -> onNavigateToDetail("serie", id) }
+                    onFocusLeft = onFocus,
+                    onOpenDetail = { containerId -> onNavigateToDetail(MediaType.SERIE, containerId) },
+                    onPlayAsset = { mediaType, assetId -> onNavigateToPlayer(mediaType, assetId) }
+                )
             }
-            setupRoute(MainRoutes.CHANNELS) { contentPadding, onFocus ->
+            setupRoute(MainRoutes.CHANNELS, sidebarTarget = NavItems.MORE.route) { contentPadding, onFocus ->
                 ChannelRoute(
                     platform = platform,
                     contentPadding = contentPadding,
                     contentFocusBeacon = contentRequesters[MainRoutes.CHANNELS],
-                    onFocusLeft = onFocus
-                ) { id -> onNavigateToPlayer("channel", id) }
+                    onFocusLeft = onFocus,
+                    onPlayAsset = { assetId -> onNavigateToPlayer(MediaType.CHANNEL, assetId) }
+                )
             }
-            setupRoute(MainRoutes.ANIME) { contentPadding, onFocus ->
+            setupRoute(MainRoutes.ANIME, sidebarTarget = NavItems.MORE.route) { contentPadding, onFocus ->
                 AnimeRoute(
                     platform = platform,
                     contentPadding = contentPadding,
                     contentFocusBeacon = contentRequesters[MainRoutes.ANIME],
-                    onFocusLeft = onFocus
-                ) { id -> onNavigateToDetail("anime", id) }
+                    onFocusLeft = onFocus,
+                    onOpenDetail = { containerId -> onNavigateToDetail(MediaType.ANIME, containerId) },
+                    onPlayAsset = { mediaType, assetId -> onNavigateToPlayer(mediaType, assetId) }
+                )
             }
             setupRoute(MainRoutes.PROFILE) { contentPadding, onFocus ->
-                ChannelRoute(
+                PanelRoute(
                     platform = platform,
                     contentPadding = contentPadding,
                     contentFocusBeacon = contentRequesters[MainRoutes.PROFILE],
-                    onFocusLeft = onFocus
-                ) {  }
+                    onFocusLeft = onFocus,
+                    onSignOut = { onNavigateToAuth() }
+                )
             }
 
         }
 
-        TvSideNavigation(
+        Sidebar(
             modifier = Modifier
                 .align(Alignment.CenterStart),
-            navItems = navItems,
+            mainNavItems = mainNavItems,
+            submenuNavItems = additionalNavItems,
+            expirationText = expirationText,
             currentRoute = currentRoute,
             isExpanded = isExpanded,
             onExpandedChange = { isExpanded = it },

@@ -16,11 +16,9 @@ dependencies {
     implementation(project(":core:config"))
     implementation(project(":core:security"))
     implementation(project(":core:model"))
-    implementation(project(":data:movie"))
-    implementation(project(":data:serie"))
-    implementation(project(":data:channel"))
-    implementation(project(":data:anime"))
+    implementation(project(":domain:common"))
     implementation(project(":domain:stream"))
+    implementation(project(":domain:media"))
 }
 
 addFirebase()

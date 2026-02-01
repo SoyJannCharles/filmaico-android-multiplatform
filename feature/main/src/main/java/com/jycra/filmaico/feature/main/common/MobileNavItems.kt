@@ -13,22 +13,22 @@ enum class MobileNavItems(
 
     HOME(
         route = MainRoutes.HOME,
-        titleResId = R.string.bottomnav_item_home,
+        titleResId = R.string.bottombar_item_home,
         iconResId = R.drawable.ic_home
     ),
     SEARCH(
         route = MainRoutes.SEARCH,
-        titleResId = R.string.bottomnav_item_search,
+        titleResId = R.string.bottombar_item_search,
         iconResId = R.drawable.ic_search
     ),
     MY_LIST(
-        route = MainRoutes.MY_LIST,
-        titleResId = R.string.bottomnav_item_mylist,
-        iconResId = R.drawable.ic_favorite_mark
+        route = MainRoutes.SAVES,
+        titleResId = R.string.bottombar_item_saved,
+        iconResId = R.drawable.ic_bookmark_filled
     ),
     PROFILE(
         route = MainRoutes.PROFILE,
-        titleResId = R.string.bottomnav_item_profile,
+        titleResId = R.string.bottombar_item_profile,
         iconResId = R.drawable.ic_account
     )
 

@@ -5,39 +5,36 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.jycra.filmaico.core.navigation.ContentType
-import com.jycra.filmaico.core.navigation.Platform
+import com.jycra.filmaico.core.device.Platform
+import com.jycra.filmaico.core.navigation.detailRoute
+import com.jycra.filmaico.core.navigation.navigateToDetail
 import com.jycra.filmaico.core.navigation.route.AppRoutes
 import com.jycra.filmaico.core.ui.component.dialog.ErrorDialog
-import com.jycra.filmaico.feature.anime.detail.animeDetailRoute
-import com.jycra.filmaico.feature.anime.detail.navigateToAnimeDetail
 import com.jycra.filmaico.feature.main.mainRoute
-import com.jycra.filmaico.feature.main.navigateToMainFromPay
-import com.jycra.filmaico.feature.main.navigateToMainFromSignIn
+import com.jycra.filmaico.feature.main.navigateToMainFromSubscription
+import com.jycra.filmaico.feature.main.navigateToMainFromAuth
 import com.jycra.filmaico.feature.main.navigateToMainFromSplash
-import com.jycra.filmaico.feature.movie.detail.movieDetailRoute
-import com.jycra.filmaico.feature.movie.detail.navigateToMovieDetail
-import com.jycra.filmaico.feature.pay.navigateToPayFromSignIn
-import com.jycra.filmaico.feature.pay.navigateToPayFromSignUp
-import com.jycra.filmaico.feature.pay.navigateToPayFromSplash
-import com.jycra.filmaico.feature.pay.payRoute
+import com.jycra.filmaico.feature.subscription.navigateToSubscriptionFromAuth
+import com.jycra.filmaico.feature.subscription.navigateToSubscriptionFromSignUp
+import com.jycra.filmaico.feature.subscription.navigateToSubscriptionFromSplash
+import com.jycra.filmaico.feature.subscription.subscriptionRoute
 import com.jycra.filmaico.feature.player.navigateToPlayer
 import com.jycra.filmaico.feature.player.playerRoute
-import com.jycra.filmaico.feature.serie.detail.navigateToSerieDetail
-import com.jycra.filmaico.feature.serie.detail.serieDetailRoute
-import com.jycra.filmaico.feature.signin.navigateToSignIn
-import com.jycra.filmaico.feature.signin.navigateToSignInAfterCancel
+import com.jycra.filmaico.feature.signin.navigateToAuth
+import com.jycra.filmaico.feature.signin.navigateToAuthAfterCancel
+import com.jycra.filmaico.feature.signin.navigateToAuthAfterSignOut
 import com.jycra.filmaico.feature.signin.signInRoute
 import com.jycra.filmaico.feature.signup.navigateToSignUp
 import com.jycra.filmaico.feature.signup.signUpRoute
 import com.jycra.filmaico.feature.splash.splashRoute
 
 @Composable
-fun AppTvNavHost() {
-
-    val navController = rememberNavController()
+fun AppTvNavHost(
+    navController: NavHostController = rememberNavController()
+) {
 
     var playbackError by remember { mutableStateOf<String?>(null) }
 
@@ -52,12 +49,11 @@ fun AppTvNavHost() {
     NavHost(navController = navController, startDestination = AppRoutes.SPLASH) {
 
         splashRoute(
-            platform = Platform.TV,
-            onNavigateToSignIn = {
-                navController.navigateToSignIn()
+            onNavigateToAuth = {
+                navController.navigateToAuth()
             },
-            onNavigateToPay = {
-                navController.navigateToPayFromSplash()
+            onNavigateToSubscription = {
+                navController.navigateToSubscriptionFromSplash()
             },
             onNavigateToMain = {
                 navController.navigateToMainFromSplash()
@@ -65,79 +61,53 @@ fun AppTvNavHost() {
         )
 
         signInRoute(
-            platform = Platform.TV,
             onNavigateToSignUp = {
                 navController.navigateToSignUp()
             },
-            onNavigateToPay = {
-                navController.navigateToPayFromSignIn()
+            onNavigateToSubscription = {
+                navController.navigateToSubscriptionFromAuth()
             },
             onNavigateToMain = {
-                navController.navigateToMainFromSignIn()
+                navController.navigateToMainFromAuth()
             }
         )
 
         signUpRoute(
-            platform = Platform.TV,
-            onNavigateToSignIn = {
+            onNavigateToAuth = {
                 navController.popBackStack()
             },
-            onNavigateToPay = {
-                navController.navigateToPayFromSignUp()
+            onNavigateToSubscription = {
+                navController.navigateToSubscriptionFromSignUp()
             }
         )
 
-        payRoute(
+        subscriptionRoute(
             platform = Platform.TV,
-            onNavigateToSignInAfterCancel = {
-                navController.navigateToSignInAfterCancel()
+            onNavigateToAuth = {
+                navController.navigateToAuthAfterCancel()
             },
-            onNavigateToHome = {
-                navController.navigateToMainFromPay()
+            onNavigateToMain = {
+                navController.navigateToMainFromSubscription()
             }
         )
 
         mainRoute(
             platform = Platform.TV,
-            onNavigateToPlayer = { contentType, contentId ->
-                navController.navigateToPlayer(contentType, contentId)
+            onNavigateToPlayer = { mediaType, assetId ->
+                navController.navigateToPlayer(mediaType, assetId)
             },
-            onNavigateToDetail = { contentType, contentId ->
-                when (contentType) {
-                    ContentType.MOVIE -> navController.navigateToMovieDetail(contentId)
-                    ContentType.SERIE -> navController.navigateToSerieDetail(contentId)
-                    ContentType.ANIME -> navController.navigateToAnimeDetail(contentId)
-                }
+            onNavigateToDetail = { mediaType, containerId ->
+                navController.navigateToDetail(mediaType, containerId)
             },
-            onNavigateToProfile = {
-
+            onNavigateToAuth = {
+                navController.navigateToAuthAfterSignOut()
             }
         )
 
-        movieDetailRoute(
+        detailRoute(
             platform = Platform.TV,
-            onNavigateToPlayer = { contentId ->
-                navController.navigateToPlayer(ContentType.MOVIE, contentId)
-            },
-            onNavigateBack = {
-                navController.popBackStack()
-            }
-        )
-
-        serieDetailRoute(
-            platform = Platform.TV,
-            onNavigateToPlayer = { contentId ->
-                navController.navigateToPlayer(ContentType.SERIE, contentId)
-            },
-            onNavigateBack = {
-                navController.popBackStack()
-            }
-        )
-
-        animeDetailRoute(
-            platform = Platform.TV,
-            onNavigateToPlayer = { contentId ->
-                navController.navigateToPlayer(ContentType.ANIME, contentId)
+            onNavigateToPlayer = { mediaType, assetId ->
+                navController.navigateToPlayer(mediaType, assetId)
             },
             onNavigateBack = {
                 navController.popBackStack()

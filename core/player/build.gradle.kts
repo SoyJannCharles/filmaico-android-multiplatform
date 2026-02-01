@@ -12,7 +12,8 @@ android {
 
 dependencies {
     implementation(project(":core:network"))
-    implementation(project(":domain:channel"))
+    implementation(project(":domain:common"))
+    implementation(project(":domain:media"))
 }
 
 addNetwork()

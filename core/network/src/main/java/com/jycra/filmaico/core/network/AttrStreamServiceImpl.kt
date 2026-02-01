@@ -1,7 +1,7 @@
 package com.jycra.filmaico.core.network
 
 import com.jycra.filmaico.core.model.stream.CookieDto
-import com.jycra.filmaico.core.model.stream.DrmKeysDto
+import com.jycra.filmaico.core.model.stream.KeysDto
 import com.jycra.filmaico.core.network.api.AttrStreamApiService
 import com.jycra.filmaico.data.stream.data.service.AttrStreamService
 import okhttp3.RequestBody
@@ -39,7 +39,7 @@ class AttrStreamServiceImpl @Inject constructor(
         url: String,
         userAgent: String,
         body: RequestBody
-    ): DrmKeysDto {
+    ): KeysDto {
         return attrStreamApiService.getDrmKeys(url, userAgent, body)
     }
 

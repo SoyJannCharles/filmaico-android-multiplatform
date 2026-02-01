@@ -19,13 +19,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jycra.filmaico.core.ui.R
 import com.jycra.filmaico.core.ui.component.FilmaicoLogo
-import com.jycra.filmaico.core.ui.feature.common.InfoGroup
-import com.jycra.filmaico.core.ui.feature.common.InfoRow
+import com.jycra.filmaico.core.ui.component.common.InfoGroup
+import com.jycra.filmaico.core.ui.component.common.InfoRow
 
 @Composable
 fun UpdateRequiredScreen(
-    oldVersion: String,
-    newVersion: String
+    currentVersion: String,
+    serverVersion: String
 ) {
 
     Column(
@@ -37,10 +37,7 @@ fun UpdateRequiredScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        FilmaicoLogo(
-            modifier = Modifier
-                .fillMaxWidth()
-        )
+        FilmaicoLogo(modifier = Modifier.fillMaxWidth())
 
         Column(
             modifier = Modifier
@@ -70,14 +67,14 @@ fun UpdateRequiredScreen(
 
                 InfoRow(
                     label = stringResource(R.string.update_required_version_current_label),
-                    value = oldVersion
+                    value = currentVersion
                 )
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceBright)
 
                 InfoRow(
                     label = stringResource(R.string.update_required_version_latest_label),
-                    value = newVersion
+                    value = serverVersion
                 )
 
             }

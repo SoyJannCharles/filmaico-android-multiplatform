@@ -17,9 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jycra.filmaico.core.navigation.Platform
+import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.ui.R
-import com.jycra.filmaico.feature.player.model.VideoMetadata
+import com.jycra.filmaico.domain.media.model.metadata.VideoMetadata
 
 @Composable
 fun PlayerHeader(
@@ -41,7 +41,7 @@ fun PlayerHeader(
                 Icon(
                     painter = painterResource(R.drawable.ic_arrow_back),
                     contentDescription = "Volver",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
@@ -49,18 +49,18 @@ fun PlayerHeader(
 
         Column {
 
-            Text(
+            /*Text(
                 text = headerInfo.title,
                 style = if (platform == Platform.MOBILE) {
                     MaterialTheme.typography.titleMedium
                 } else {
                     MaterialTheme.typography.titleLarge
                 },
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
-            )
+            )*/
 
-            headerInfo.subtitle?.let { subtitle ->
+            /*headerInfo.subtitle?.let { subtitle ->
                 Text(
                     text = subtitle,
                     style = if (platform == Platform.MOBILE) {
@@ -70,7 +70,7 @@ fun PlayerHeader(
                     },
                     color = Color.White.copy(alpha = 0.8f)
                 )
-            }
+            }*/
 
         }
 

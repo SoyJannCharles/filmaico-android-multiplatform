@@ -1,5 +1,6 @@
 package com.jycra.filmaico.feature.player.components.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -22,8 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
-import com.jycra.filmaico.core.navigation.Platform
-import com.jycra.filmaico.core.player.VideoQuality
+import com.jycra.filmaico.core.player.model.VideoQuality
 import com.jycra.filmaico.feature.player.QualityState
 
 @Composable
@@ -32,11 +32,18 @@ fun SettingsMenu(
     menuState: SettingsMenuState,
     qualityState: QualityState,
     focusRequester: FocusRequester,
-    platform: Platform,
     onMenuStateChange: (SettingsMenuState) -> Unit,
     onQualityChange: (VideoQuality) -> Unit,
     onDismiss: () -> Unit
 ) {
+
+    BackHandler(enabled = visible) {
+        if (menuState != SettingsMenuState.MAIN) {
+            onMenuStateChange(SettingsMenuState.MAIN)
+        } else {
+            onDismiss()
+        }
+    }
 
     AnimatedVisibility(
         modifier = Modifier.fillMaxSize(),
@@ -74,8 +81,9 @@ fun SettingsMenu(
                             MainSettingsSheet(
                                 focusRequester = focusRequester,
                                 onQualityClick = { onMenuStateChange(SettingsMenuState.QUALITY) },
-                                onSpeedClick = { onMenuStateChange(SettingsMenuState.SPEED) },
-                                onSubtitlesClick = { onMenuStateChange(SettingsMenuState.SUBTITLES) }
+                                /*onSpeedClick = { onMenuStateChange(SettingsMenuState.SPEED) },
+                                onSubtitlesClick = { onMenuStateChange(SettingsMenuState.SUBTITLES) }*/
+                                onDismiss = onDismiss
                             )
                         }
                         SettingsMenuState.QUALITY -> {
@@ -83,16 +91,15 @@ fun SettingsMenu(
                                 qualities = qualityState.qualities,
                                 currentQuality = qualityState.currentQuality,
                                 focusRequester = focusRequester,
-                                onQualitySelected = onQualityChange,
-                                onBack = { onMenuStateChange(SettingsMenuState.MAIN) }
+                                onQualitySelected = onQualityChange
                             )
                         }
-                        SettingsMenuState.SPEED -> {
+                        /*SettingsMenuState.SPEED -> {
                             // TODO: Implementar
                         }
                         SettingsMenuState.SUBTITLES -> {
                             // TODO: Implementar
-                        }
+                        }*/
                         else -> { /* Nada */ }
                     }
 

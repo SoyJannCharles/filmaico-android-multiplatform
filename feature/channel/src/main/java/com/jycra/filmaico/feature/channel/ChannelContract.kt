@@ -1,21 +1,21 @@
 package com.jycra.filmaico.feature.channel
 
-import com.jycra.filmaico.domain.channel.model.ChannelCarousel
+import com.jycra.filmaico.core.ui.feature.media.model.UiMediaCarousel
 
 sealed interface ChannelUiState {
     data object Loading : ChannelUiState
-    data class Success(val carousels: List<ChannelCarousel>) : ChannelUiState
+    data class Success(val carousels: List<UiMediaCarousel>) : ChannelUiState
     data class Error(val message: String) : ChannelUiState
 }
 
 sealed interface ChannelUiEvent {
-    data class OnChannelClick(
-        val channelId: String,
+    data class PlayAsset(
+        val assetId: String,
         val carouselIndex: Int = 0,
-        val channelIndex: Int = 0
+        val contentIndex: Int = 0
     ) : ChannelUiEvent
 }
 
 sealed interface ChannelUiEffect {
-    data class NavigateToPlayer(val channelId: String) : ChannelUiEffect
+    data class PlayAsset(val assetId: String) : ChannelUiEffect
 }

@@ -4,13 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
-import android.webkit.ConsoleMessage
-import android.webkit.CookieManager
-import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
-import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.jycra.filmaico.core.network.di.AuthHttpClient
@@ -34,33 +29,36 @@ class ScrapingServiceImpl @Inject constructor(
 ) : ScrapingService {
 
     @SuppressLint("SetJavaScriptEnabled")
-    override fun extractStreamM3u8Url(playerUrl: String): Flow<String> = callbackFlow {
+    override fun extractStreamUri(iframeUrl: String): Flow<String> = callbackFlow {
 
         val webView = WebView(context)
 
         withContext(Dispatchers.Main) {
+
             webView.apply {
+
                 settings.javaScriptEnabled = true
                 settings.mediaPlaybackRequiresUserGesture = false
                 webViewClient = object : WebViewClient() {
+
                     override fun shouldInterceptRequest(
                         view: WebView?,
                         request: WebResourceRequest?
                     ): WebResourceResponse? {
                         request?.url?.toString()?.let { url ->
-                            //val isTargetM3u8 = url.endsWith(".m3u8") && !url.contains("master.m3u8")
+
                             val urlWithoutParams = url.split("?").first()
-                            val isTargetM3u8 = urlWithoutParams.endsWith(".m3u8") && urlWithoutParams.contains("master.m3u8")
+                            val isTargetM3u8 = urlWithoutParams.endsWith(".m3u8") && urlWithoutParams.contains("master.m3u8") ||
+                                    urlWithoutParams.endsWith(".txt") && urlWithoutParams.contains("master.txt")
+
                             if (isTargetM3u8) {
-                                Log.d("WebViewBlock", "Url M3u8: $url")
                                 trySend(url)
                             }
-                            if (urlWithoutParams.endsWith(".mp4") && url != playerUrl) {
-                                Log.d("WebViewBlock", "Url Mp4: $url")
-                                val headers = request.requestHeaders
-                                Log.d("ScrapingService", "Headers capturados: $headers")
+
+                            if (urlWithoutParams.endsWith(".mp4") && url != iframeUrl) {
                                 trySend(url)
                             }
+
                         }
                         return super.shouldInterceptRequest(view, request)
                     }
@@ -69,27 +67,18 @@ class ScrapingServiceImpl @Inject constructor(
                         view: WebView?,
                         request: WebResourceRequest?
                     ): Boolean {
+
                         val url = request?.url.toString()
+                        return url.startsWith("intent://") || url.startsWith("market://")
 
-                        // Bloquea cualquier intento de abrir intent:// o market://
-                        if (url.startsWith("intent://") || url.startsWith("market://")) {
-                            // Opcional: log para debug
-                            Log.d("WebViewBlock", "Bloqueada URL peligrosa: $url")
-                            return true // <- bloquea
-                        }
-
-                        // Permite lo demás
-                        return false
                     }
 
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        // Log para saber si la página terminó de cargar
-                        Log.d("WebView", "onPageFinished: $url")
-                    }
                 }
-                loadUrl(playerUrl)
+
+                loadUrl(iframeUrl)
+
             }
+
         }
 
         awaitClose {
@@ -97,7 +86,7 @@ class ScrapingServiceImpl @Inject constructor(
                 try {
                     webView.destroy()
                 } catch (e: Exception) {
-                    // Es buena idea loguear esta excepción si ocurre
+
                 }
             }
         }
@@ -113,7 +102,8 @@ class ScrapingServiceImpl @Inject constructor(
     }
 
     private suspend fun downloadHtml(url: String, headers: Map<String, String>?): String? {
-        return withContext(Dispatchers.IO) { // Aseguramos que se ejecute en un hilo de fondo
+        return withContext(Dispatchers.IO) {
+
             try {
 
                 val requestBuilder = Request.Builder().url(url)
@@ -124,46 +114,33 @@ class ScrapingServiceImpl @Inject constructor(
                 val request = requestBuilder.build()
 
                 authHttpClient.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        // --- CAMBIO CLAVE AQUÍ ---
-                        // 1. Leemos el cuerpo UNA SOLA VEZ y lo guardamos en una variable.
-                        val htmlContent = response.body?.string()
 
-                        if (!htmlContent.isNullOrEmpty()) {
-                            Log.i(
-                                "ScrapingService",
-                                "HTML descargado. Longitud: ${htmlContent.length} caracteres."
-                            )
-                            // 2. Devolvemos la variable que ya contiene el HTML.
-                            htmlContent
-                        } else {
-                            Log.w(
-                                "ScrapingService",
-                                "La respuesta fue exitosa (código ${response.code}) pero el cuerpo está vacío."
-                            )
-                            null
-                        }
+                    if (response.isSuccessful) {
+
+                        val htmlContent = response.body.string()
+                        if (!htmlContent.isEmpty()) htmlContent else null
+
                     } else {
-                        Log.e(
-                            "ScrapingService",
-                            "Error al descargar el HTML. Código: ${response.code}"
-                        )
                         null
                     }
+
                 }
+
             } catch (e: Exception) {
-                Log.i("ScrapingService", "Error al descargar el HTML: ${e.message}")
                 null
             }
+
         }
+
     }
 
     private fun extractVideoUrlFromHtml(htmlContent: String, regexPattern: String): String? {
+
         val regex = Regex(regexPattern)
         val matchResult = regex.find(htmlContent)
 
-        // groupValues[1] contiene el primer grupo de captura, que es lo que nos interesa
         return matchResult?.groupValues?.getOrNull(1)?.replace("\\/", "/")
+
     }
 
 }

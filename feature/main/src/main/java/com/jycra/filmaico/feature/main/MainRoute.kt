@@ -1,30 +1,29 @@
 package com.jycra.filmaico.feature.main
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.jycra.filmaico.core.navigation.Platform
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.jycra.filmaico.core.device.Platform
+import com.jycra.filmaico.domain.media.model.MediaType
 
 @Composable
 fun MainRoute(
     viewModel: MainViewModel = hiltViewModel(),
     platform: Platform,
-    onNavigateToDetail: (contentType: String, contentId: String) -> Unit,
-    onNavigateToPlayer: (contentType: String, contentId: String) -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToDetail: (mediaType: MediaType, containerId: String) -> Unit,
+    onNavigateToPlayer: (mediaType: MediaType, assetId: String) -> Unit,
+    onNavigateToAuth: () -> Unit
 ) {
 
-    when (platform) {
-        Platform.MOBILE -> MainScaffoldMobile(
-            platform = platform,
-            onNavigateToDetail = onNavigateToDetail,
-            onNavigateToPlayer = onNavigateToPlayer,
-            onNavigateToProfile = onNavigateToProfile
-        )
-        Platform.TV -> MainScaffoldTv(
-            platform = platform,
-            onNavigateToDetail = onNavigateToDetail,
-            onNavigateToPlayer = onNavigateToPlayer
-        )
-    }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    MainScaffold(
+        uiState = uiState,
+        platform = platform,
+        onNavigateToDetail = onNavigateToDetail,
+        onNavigateToPlayer = onNavigateToPlayer,
+        onNavigateToAuth = onNavigateToAuth
+    )
 
 }

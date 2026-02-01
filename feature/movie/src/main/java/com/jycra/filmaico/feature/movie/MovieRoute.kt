@@ -7,8 +7,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.focus.FocusRequester
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.jycra.filmaico.core.navigation.Platform
-import com.jycra.filmaico.core.ui.util.focus.BrowseFocusCallbacks
+import com.jycra.filmaico.core.device.Platform
+import com.jycra.filmaico.core.ui.util.focus.MediaFocusCallbacks
+import com.jycra.filmaico.domain.media.model.MediaType
 import kotlinx.coroutines.android.awaitFrame
 
 @Composable
@@ -18,7 +19,8 @@ fun MovieRoute(
     contentPadding: PaddingValues = PaddingValues(),
     onFocusLeft: () -> Unit = {},
     contentFocusBeacon: FocusRequester? = null,
-    onMovieClick: (String) -> Unit,
+    onOpenDetail: (containerId: String) -> Unit,
+    onPlayAsset: (mediaType: MediaType, assetId: String) -> Unit
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -31,8 +33,11 @@ fun MovieRoute(
     LaunchedEffect(key1 = Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is MovieUiEffect.NavigateToDetail -> {
-                    onMovieClick(effect.movieId)
+                is MovieUiEffect.OpenDetail -> {
+                    onOpenDetail(effect.containerId)
+                }
+                is MovieUiEffect.PlayAsset -> {
+                    onPlayAsset(effect.mediaType, effect.assetId)
                 }
             }
         }
@@ -42,8 +47,8 @@ fun MovieRoute(
         uiState = uiState,
         platform = platform,
         contentPadding = contentPadding,
-        browseFocusState = viewModel.browseFocusState,
-        browseFocusCallbacks = BrowseFocusCallbacks(
+        mediaFocusState = viewModel.mediaFocusState,
+        mediaFocusCallbacks = MediaFocusCallbacks(
             onFocusConsumed = viewModel::markInitialFocusConsumed,
             onFocusRestored = viewModel::markFocusRestored,
             onFocusLeft = { carouselIndex, contentIndex ->

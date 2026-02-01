@@ -18,12 +18,12 @@ class RemoteConfig @Inject constructor(
         firebaseRemoteConfig.setDefaultsAsync(mapOf(
             "app_version_code" to -1,
             "app_version_name" to "0.0.0",
-            "DUMMY_IV" to "",
-            "DUMMY_KEY_256" to "",
-            "DUMMY_AUTH_HEADER" to "",
-            "DUMMY_USER_AGENT" to "",
-            "https://api.example.com/jwt" to "",
-            "https://cdn.example.com/token" to ""
+            "aes_decryption_pass_iv" to "",
+            "aes_decryption_pass_key" to "",
+            "tvar_cdn_auth_header" to "",
+            "drm_user_agent" to "",
+            "cvattv_jwt_url" to "",
+            "cvattv_cdn_token_url" to ""
         ))
     }
 

@@ -5,8 +5,9 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.jycra.filmaico.core.navigation.Platform
+import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.navigation.route.AppRoutes
+import com.jycra.filmaico.domain.media.model.MediaType
 
 fun NavGraphBuilder.playerRoute(
     platform: Platform,
@@ -15,8 +16,8 @@ fun NavGraphBuilder.playerRoute(
     composable(
         route = AppRoutes.PLAYER_WITH_ARGS,
         arguments = listOf(
-            navArgument("contentType") { type = NavType.StringType },
-            navArgument("contentId") { type = NavType.StringType }
+            navArgument("mediaType") { type = NavType.StringType },
+            navArgument("assetId") { type = NavType.StringType }
         )
     ) {
         PlayerRoute(
@@ -26,6 +27,6 @@ fun NavGraphBuilder.playerRoute(
     }
 }
 
-fun NavController.navigateToPlayer(contentType: String, contentId: String) {
-    this.navigate(AppRoutes.playerWithArgs(contentType, contentId))
+fun NavController.navigateToPlayer(mediaType: MediaType, assetId: String) {
+    this.navigate(AppRoutes.playerWithArgs(mediaType = mediaType.value, assetId = assetId,))
 }

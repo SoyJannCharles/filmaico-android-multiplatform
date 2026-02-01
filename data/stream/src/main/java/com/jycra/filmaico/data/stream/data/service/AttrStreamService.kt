@@ -1,7 +1,7 @@
 package com.jycra.filmaico.data.stream.data.service
 
 import com.jycra.filmaico.core.model.stream.CookieDto
-import com.jycra.filmaico.core.model.stream.DrmKeysDto
+import com.jycra.filmaico.core.model.stream.KeysDto
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -19,6 +19,6 @@ interface AttrStreamService {
 
     suspend fun getCookies(url: String): List<CookieDto>
 
-    suspend fun getDrmKeys(url: String, userAgent: String, body: RequestBody): DrmKeysDto
+    suspend fun getDrmKeys(url: String, userAgent: String, body: RequestBody): KeysDto
 
 }

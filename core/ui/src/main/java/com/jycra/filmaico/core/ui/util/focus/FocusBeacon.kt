@@ -13,17 +13,19 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun FocusBeacon(
     focusRequester: FocusRequester,
-    browseFocusCallbacks: BrowseFocusCallbacks
+    mediaFocusCallbacks: MediaFocusCallbacks
 ) {
+
     Box(
         modifier = Modifier
             .size(0.dp)
             .focusRequester(focusRequester)
             .onFocusChanged { focusState ->
                 if (focusState.isFocused) {
-                    browseFocusCallbacks.onBeaconReceived()
+                    mediaFocusCallbacks.onBeaconReceived()
                 }
             }
             .focusable()
     )
+
 }

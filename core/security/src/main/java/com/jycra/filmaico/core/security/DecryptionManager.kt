@@ -8,7 +8,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import android.util.Base64
 import com.jycra.filmaico.core.config.ConfigSource
-import com.jycra.filmaico.domain.channel.error.DecryptionException
 
 @Singleton
 class DecryptionManager @Inject constructor(
@@ -36,10 +35,7 @@ class DecryptionManager @Inject constructor(
             val decryptedData = cipher.doFinal(encryptedData)
             String(decryptedData, Charsets.UTF_8)
         } catch (e: Exception) {
-            throw DecryptionException(
-                message = "Fallo en el proceso de descifrado para el texto: $encryptedBase64Text",
-                cause = e
-            )
+            ""
         }
     }
 

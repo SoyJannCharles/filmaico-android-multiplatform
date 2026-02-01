@@ -1,6 +1,8 @@
 package com.jycra.filmaico.domain.stream.usecase
 
-import com.jycra.filmaico.domain.stream.model.DrmKeys
+import com.jycra.filmaico.domain.media.model.stream.DrmInfo
+import com.jycra.filmaico.domain.media.model.stream.DrmKeys
+import com.jycra.filmaico.domain.media.model.stream.Key
 import com.jycra.filmaico.domain.stream.repository.AttrStreamRepository
 import javax.inject.Inject
 
@@ -10,42 +12,31 @@ class GetDrmKeyUseCase @Inject constructor(
 
     suspend operator fun invoke(
         contentId: String,
-        licenseUrl: String,
+        drmInfo: DrmInfo,
         forceRefresh: Boolean = false,
-        onReportStatus: (String) -> Unit = {}
+        onStatusUpdate: (String) -> Unit = {}
     ): DrmKeys? {
 
-        if (forceRefresh) {
-            onReportStatus("Forzando actualización desde servidor...")
-            return fetchAndCacheNewKey(contentId, licenseUrl)
+        if (!forceRefresh && drmInfo.staticKeys.isValid()) {
+            onStatusUpdate("Validando llaves de seguridad...")
+            return DrmKeys(
+                listOf(
+                    Key(
+                        kty = "oct",
+                        k = drmInfo.staticKeys.k,
+                        kid = drmInfo.staticKeys.kid,
+                    )
+                )
+            )
         }
 
-        onReportStatus("Buscando llaves en caché local...")
-        val localKey = attrStreamRepository.getCachedDrmKey(contentId)
-        if (localKey != null) {
-            return localKey
+        if (drmInfo.licenseUrl.isNotBlank()) {
+            onStatusUpdate("Obteniendo autorización de red...")
+            return attrStreamRepository.fetchDrmKeysFromNetwork(drmInfo.licenseUrl)
         }
 
-        onReportStatus("Consultando base de datos remota...")
-        val remoteKey = attrStreamRepository.getDrmKeyFromRemote(contentId)
-        if (remoteKey != null) {
-            // Si la encontramos en Firebase, la guardamos localmente para la próxima vez
-            attrStreamRepository.saveDrmKeyToCache(contentId, remoteKey)
-            return remoteKey
-        }
+        return null
 
-        // 3. ÚLTIMO RECURSO: IR A LA RED
-        onReportStatus("Solicitando licencias al proveedor...")
-        return fetchAndCacheNewKey(contentId, licenseUrl)
-
-    }
-
-    private suspend fun fetchAndCacheNewKey(channelId: String, licenseUrl: String): DrmKeys? {
-        val newKey = attrStreamRepository.fetchDrmKeysFromNetwork(licenseUrl)
-        // Guardamos la nueva clave en ambos cachés
-        attrStreamRepository.saveDrmKeyToCache(channelId, newKey)
-        attrStreamRepository.saveDrmKeyToRemote(channelId, newKey)
-        return newKey
     }
 
 }

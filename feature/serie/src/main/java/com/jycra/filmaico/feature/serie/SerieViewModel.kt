@@ -5,8 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jycra.filmaico.core.ui.util.focus.BrowseFocusState
-import com.jycra.filmaico.domain.serie.usecase.GetSerieContentUseCase
+import com.jycra.filmaico.core.ui.feature.media.util.mapper.toUiCarousels
+import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
+import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.media.usecase.GetMediaContentUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +22,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SerieViewModel @Inject constructor(
-    private val getSerieContentUseCase: GetSerieContentUseCase
+    private val getMediaContentUseCase: GetMediaContentUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SerieUiState>(SerieUiState.Loading)
@@ -29,35 +31,51 @@ class SerieViewModel @Inject constructor(
     private val _effect = Channel<SerieUiEffect>()
     val effect = _effect.receiveAsFlow()
 
-    var browseFocusState by mutableStateOf(BrowseFocusState())
+    var mediaFocusState by mutableStateOf(MediaFocusState())
         private set
 
     init {
-        getSerieContent()
+        observeContent()
     }
 
-    private fun getSerieContent() {
+    private fun observeContent() {
         viewModelScope.launch {
-            getSerieContentUseCase()
+            getMediaContentUseCase(mediaType = MediaType.SERIE)
                 .onStart { _uiState.value = SerieUiState.Loading }
                 .catch { e -> _uiState.value = SerieUiState.Error(e.message ?: "Ocurrió un error") }
                 .collect { carousels ->
-                    _uiState.value = SerieUiState.Success(carousels)
+                    _uiState.value = SerieUiState.Success(
+                        carousels = carousels.map { carousel ->
+                            carousel.toUiCarousels()
+                        }
+                    )
                 }
         }
     }
 
     fun onEvent(event: SerieUiEvent) {
         when (event) {
-            is SerieUiEvent.OnSerieClick -> {
-                browseFocusState = browseFocusState.copy(
+            is SerieUiEvent.OpenDetail -> {
+                mediaFocusState = mediaFocusState.copy(
                     lastFocusedCarouselIndex = event.carouselIndex,
-                    lastFocusedContentIndex = event.serieIndex,
+                    lastFocusedContentIndex = event.contentIndex,
                     shouldRestoreFocus = false
                 )
                 viewModelScope.launch {
                     _effect.send(
-                        SerieUiEffect.NavigateToDetail(event.serieId)
+                        SerieUiEffect.OpenDetail(containerId = event.containerId)
+                    )
+                }
+            }
+            is SerieUiEvent.PlayAsset -> {
+                mediaFocusState = mediaFocusState.copy(
+                    lastFocusedCarouselIndex = event.carouselIndex,
+                    lastFocusedContentIndex = event.contentIndex,
+                    shouldRestoreFocus = false
+                )
+                viewModelScope.launch {
+                    _effect.send(
+                        SerieUiEffect.PlayAsset(mediaType = event.mediaType, assetId = event.assetId)
                     )
                 }
             }
@@ -65,20 +83,20 @@ class SerieViewModel @Inject constructor(
     }
 
     fun onScreenResumed() {
-        browseFocusState = browseFocusState.copy(
+        mediaFocusState = mediaFocusState.copy(
             shouldRestoreFocus = true
         )
     }
 
     fun saveFocusPosition(carouselIndex: Int, contentIndex: Int) {
-        browseFocusState = browseFocusState.copy(
+        mediaFocusState = mediaFocusState.copy(
             lastFocusedCarouselIndex = carouselIndex,
             lastFocusedContentIndex = contentIndex
         )
     }
 
     fun markInitialFocusConsumed() {
-        browseFocusState = browseFocusState.copy(
+        mediaFocusState = mediaFocusState.copy(
             lastFocusedCarouselIndex = 0,
             lastFocusedContentIndex = 0,
             hasConsumedInitialFocus = true,
@@ -87,7 +105,7 @@ class SerieViewModel @Inject constructor(
     }
 
     fun markFocusRestored() {
-        browseFocusState = browseFocusState.copy(shouldRestoreFocus = false)
+        mediaFocusState = mediaFocusState.copy(shouldRestoreFocus = false)
     }
 
 }

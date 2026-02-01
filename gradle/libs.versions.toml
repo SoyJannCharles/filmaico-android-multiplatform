@@ -55,6 +55,7 @@ junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 jetbrainsKotlinJvm = "2.2.20"
 material = "1.13.0"
+firebaseDatabaseKtx = "22.0.1"
 
 [libraries]
 # AndroidX Core
@@ -131,6 +132,7 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 debug-androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 debug-androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+firebase-database-ktx = { group = "com.google.firebase", name = "firebase-database-ktx", version.ref = "firebaseDatabaseKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

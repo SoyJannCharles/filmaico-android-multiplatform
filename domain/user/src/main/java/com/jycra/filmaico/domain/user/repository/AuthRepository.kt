@@ -7,16 +7,18 @@ import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
 
-    suspend fun signUp(email: String, password: String): AuthResult<Unit, AuthError>
-    suspend fun signIn(email: String, password: String): AuthResult<Unit, AuthError>
+    suspend fun registerAccount(email: String, password: String): AuthResult<Unit, AuthError>
+    suspend fun authenticate(email: String, password: String): AuthResult<Unit, AuthError>
     suspend fun signOut()
+    suspend fun signOutLocal()
 
     suspend fun getCurrentUser(): User?
 
     suspend fun hasActiveSubscription(): Boolean
-    fun listenToSubscriptionStatus(): Flow<Boolean>
+    fun observeSessionStatus(): Flow<Boolean>
+    fun observeSubscriptionStatus(): Flow<Boolean>
 
-    suspend fun saveCurrentDeviceSession(): AuthResult<Unit, AuthError>
+    suspend fun registerDeviceSession(): AuthResult<Unit, AuthError>
 
     suspend fun deleteCurrentUser(): AuthResult<Unit, AuthError>
     suspend fun reauthenticateAndDelete(password: String): AuthResult<Unit, AuthError>

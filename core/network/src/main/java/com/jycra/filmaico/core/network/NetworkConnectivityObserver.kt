@@ -1,6 +1,5 @@
 package com.jycra.filmaico.core.network
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -16,7 +15,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class NetworkConnectivityObserver @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext context: Context
 ): ConnectivityObserver {
 
     private val connectivityManager =

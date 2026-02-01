@@ -8,9 +8,10 @@ android {
 
 dependencies {
     implementation(project(":core:common"))
+    implementation(project(":core:device"))
+    implementation(project(":core:navigation"))
     implementation(project(":core:config"))
     implementation(project(":core:network"))
     implementation(project(":core:ui"))
-    implementation(project(":core:navigation"))
     implementation(project(":domain:user"))
 }

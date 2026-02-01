@@ -17,6 +17,11 @@ kotlin {
     }
 }
 
+dependencies {
+    implementation(project(":domain:common"))
+    implementation(project(":domain:media"))
+}
+
 addRuntimeCompose()
 addCoroutines()
 addGson()

@@ -3,8 +3,6 @@ package com.jycra.filmaico.core.network.di
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
-import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.google.firebase.crashlytics.crashlytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.PersistentCacheSettings
@@ -13,6 +11,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 @Module
@@ -20,6 +21,12 @@ import javax.inject.Singleton
 abstract class FirebaseModule {
 
     companion object {
+
+        @Singleton
+        @Provides
+        @ApplicationScope
+        fun provideApplicationScope(): CoroutineScope =
+            CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
         @Provides
         @Singleton
@@ -44,3 +51,5 @@ abstract class FirebaseModule {
     }
 
 }
+
+annotation class ApplicationScope

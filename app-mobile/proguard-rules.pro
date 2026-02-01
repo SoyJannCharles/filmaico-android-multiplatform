@@ -34,7 +34,7 @@
   <fields>;
 }
 
--keep class com.jycra.filmaico.domain.stream.model.Stream, com.jycra.filmaico.domain.stream.model.Stream** { *; }
+-keep class com.jycra.filmaico.domain.media.model.stream.Stream, com.jycra.filmaico.domain.stream.model.Stream** { *; }
 
 # Es buena idea mantener también el DrmInfo si es una data class separada
--keep class com.jycra.filmaico.domain.stream.model.DrmInfo { *; }
+-keep class com.jycra.filmaico.domain.media.model.stream.DrmInfo { *; }

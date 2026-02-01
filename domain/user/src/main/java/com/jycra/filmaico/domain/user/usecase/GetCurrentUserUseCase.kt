@@ -5,9 +5,10 @@ import com.jycra.filmaico.domain.user.repository.AuthRepository
 import javax.inject.Inject
 
 class GetCurrentUserUseCase @Inject constructor(
-    private val authRepository: AuthRepository
+    private val repository: AuthRepository
 ) {
 
-    suspend operator fun invoke() : User? = authRepository.getCurrentUser()
+    suspend operator fun invoke() : User? =
+        repository.getCurrentUser()
 
 }

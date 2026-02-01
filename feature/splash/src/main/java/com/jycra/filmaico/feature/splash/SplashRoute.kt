@@ -5,15 +5,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.jycra.filmaico.core.navigation.Platform
 
 @Composable
 fun SplashRoute(
     viewModel: SplashViewModel = hiltViewModel(),
-    platform: Platform,
-    onNavigateToSignIn: () -> Unit,
-    onNavigateToPay: () -> Unit,
-    onNavigateToHome: () -> Unit
+    onNavigateToAuth: () -> Unit,
+    onNavigateToSubscription: () -> Unit,
+    onNavigateToMain: () -> Unit
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -21,19 +19,18 @@ fun SplashRoute(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is SplashUiEffect.NavigateToSignIn ->
-                    onNavigateToSignIn()
-                is SplashUiEffect.NavigateToPay ->
-                    onNavigateToPay()
-                is SplashUiEffect.NavigateToHome ->
-                    onNavigateToHome()
+                is SplashUiEffect.NavigateToAuth ->
+                    onNavigateToAuth()
+                is SplashUiEffect.NavigateToSubscription ->
+                    onNavigateToSubscription()
+                is SplashUiEffect.NavigateToMain ->
+                    onNavigateToMain()
             }
         }
     }
 
     SplashScreen(
-        uiState = uiState,
-        platform = platform
+        uiState = uiState
     )
 
 }

@@ -1,15 +1,14 @@
 package com.jycra.filmaico.core.player
 
 import android.content.Context
-import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.DrmSessionManager
@@ -21,8 +20,8 @@ import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.google.gson.Gson
 import com.jycra.filmaico.core.network.di.PlayerHttpClient
-import com.jycra.filmaico.domain.stream.model.DrmKeys
-import com.jycra.filmaico.domain.stream.model.PlaybackData
+import com.jycra.filmaico.domain.media.model.metadata.PlaybackData
+import com.jycra.filmaico.domain.media.model.stream.DrmKeys
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ViewModelScoped
 import okhttp3.OkHttpClient
@@ -38,13 +37,13 @@ class PlayerManager @Inject constructor(
 ) {
 
     private var onReadyCallback: (() -> Unit)? = null
-    private var onErrorCallback: (() -> Unit)? = null
+    private var onErrorCallback: ((error: PlaybackException) -> Unit)? = null
 
     fun setPlaybackReadyCallback(callback: () -> Unit) {
         this.onReadyCallback = callback
     }
 
-    fun setPlaybackErrorCallback(callback: () -> Unit) {
+    fun setPlaybackErrorCallback(callback: (error: PlaybackException) -> Unit) {
         this.onErrorCallback = callback
     }
 
@@ -70,7 +69,7 @@ class PlayerManager @Inject constructor(
         }
 
         override fun onPlayerError(error: PlaybackException) {
-            onErrorCallback?.invoke()
+            onErrorCallback?.invoke(error)
         }
 
     }
@@ -81,7 +80,7 @@ class PlayerManager @Inject constructor(
     }
 
     @OptIn(UnstableApi::class)
-    fun prepareAndPlay(playbackData: PlaybackData) {
+    fun prepareAndPlay(playbackData: PlaybackData, startPosition: Long?) {
 
         exoPlayer.stop()
         exoPlayer.clearMediaItems()
@@ -90,12 +89,16 @@ class PlayerManager @Inject constructor(
 
         exoPlayer.setMediaSource(mediaSource)
         exoPlayer.prepare()
+
+        startPosition?.let {
+            exoPlayer.seekTo(startPosition)
+        }
+
+        exoPlayer.play()
     }
 
     @OptIn(UnstableApi::class)
     private fun createMediaSource(playbackData: PlaybackData): MediaSource {
-
-        //val dataSourceFactory = OkHttpDataSource.Factory(httpClient)
 
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
@@ -103,18 +106,27 @@ class PlayerManager @Inject constructor(
             .setReadTimeoutMs(15_000)
             .setDefaultRequestProperties(playbackData.headers ?: emptyMap())
 
-        val mediaItem = MediaItem.fromUri(playbackData.uri)
+        val mediaItemBuilder = MediaItem.Builder()
+            .setUri(playbackData.uri)
 
-        return if (
-            playbackData.uri.endsWith(
-                suffix = ".mp4",
-                ignoreCase = true
-            ) /*||
-            playbackData.uri.endsWith(
-                suffix = ".mkv",
-                ignoreCase = true
-            )*/
-        ) {
+        val urlWithoutParams = playbackData.uri.substringBefore('?').lowercase()
+
+        val isProgressive = urlWithoutParams.endsWith(".mp4") ||
+                urlWithoutParams.endsWith(".mkv")
+
+        if (!isProgressive) {
+
+            val isStandardStream = urlWithoutParams.endsWith(".m3u8") ||
+                    urlWithoutParams.endsWith(".mpd")
+
+            if (!isStandardStream)
+                mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+
+        }
+
+        val mediaItem = mediaItemBuilder.build()
+
+        return if (isProgressive) {
             ProgressiveMediaSource.Factory(dataSourceFactory)
                 .createMediaSource(mediaItem)
         } else {

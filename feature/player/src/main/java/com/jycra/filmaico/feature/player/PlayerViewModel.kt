@@ -1,386 +1,645 @@
 package com.jycra.filmaico.feature.player
 
-import android.util.Log
+import android.content.Context
+import android.graphics.Bitmap
+import android.view.TextureView
 import androidx.annotation.OptIn
+import androidx.core.graphics.scale
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.media3.common.C
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
-import com.jycra.filmaico.core.navigation.ContentType
+import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.player.PlayerManager
-import com.jycra.filmaico.core.player.VideoQuality
-import com.jycra.filmaico.core.reporter.ErrorReporter
-import com.jycra.filmaico.domain.anime.model.localizedName
-import com.jycra.filmaico.domain.anime.usecase.GetAnimeContentByIdUseCase
-import com.jycra.filmaico.domain.channel.model.localizedName
-import com.jycra.filmaico.domain.channel.usecase.GetChannelByIdUseCase
-import com.jycra.filmaico.domain.movie.model.localizedName
-import com.jycra.filmaico.domain.stream.usecase.ProcessStreamUseCase
-import com.jycra.filmaico.domain.stream.model.Stream
-import com.jycra.filmaico.domain.movie.usecase.GetMovieByIdUseCase
-import com.jycra.filmaico.domain.serie.model.localizedName
-import com.jycra.filmaico.domain.serie.usecase.GetSerieContentByIdUseCase
-import com.jycra.filmaico.domain.stream.error.AllSourcesFailedException
-import com.jycra.filmaico.domain.stream.usecase.InvalidateDrmKeyCacheUseCase
-import com.jycra.filmaico.domain.stream.usecase.InvalidateStreamUrlCacheUseCase
-import com.jycra.filmaico.feature.player.model.VideoMetadata
+import com.jycra.filmaico.core.player.model.VideoQuality
+import com.jycra.filmaico.core.player.util.getAvailableQualities
+import com.jycra.filmaico.core.player.util.setVideoQuality
+import com.jycra.filmaico.domain.history.usecase.UpsertMediaProgressUseCase
+import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.media.model.metadata.PlayerMetadata
+import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
+import com.jycra.filmaico.domain.media.usecase.ToggleSaveStatusUseCase
+import com.jycra.filmaico.domain.stream.usecase.PrepareStreamUseCase
+import com.jycra.filmaico.feature.player.components.settings.SettingsMenuState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 import javax.inject.Inject
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
-    private val getMovieByIdUseCase: GetMovieByIdUseCase,
-    private val getSerieContentByIdUseCase: GetSerieContentByIdUseCase,
-    private val getChannelByIdUseCase: GetChannelByIdUseCase,
-    private val getAnimeContentByIdUseCase: GetAnimeContentByIdUseCase,
-    private val processStreamUseCase: ProcessStreamUseCase,
-    private val invalidateDrmKeyCacheUseCase: InvalidateDrmKeyCacheUseCase,
-    private val invalidateStreamUrlCacheUseCase: InvalidateStreamUrlCacheUseCase,
+    private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
+    private val upsertMediaProgressUseCase: UpsertMediaProgressUseCase,
+    private val prepareStreamUseCase: PrepareStreamUseCase,
+    private val toggleSaveStatusUseCase: ToggleSaveStatusUseCase,
     val playerManager: PlayerManager,
-    private val reporter: ErrorReporter,
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
-    private val contentId: String = savedStateHandle.get<String>("contentId")!!
-    private val contentType: String = savedStateHandle.get<String>("contentType")!!
-
-    private var currentHeaderInfo: VideoMetadata? = null
-
-    private var sources: List<Stream> = emptyList()
-    private var currentSourceIndex = 0
-    private var hasRetriedWithInvalidatedCache = false
+    private val initialMediaId: String = checkNotNull(savedStateHandle["assetId"])
+    private val initialMediaType: MediaType = MediaType.fromString(checkNotNull(savedStateHandle["mediaType"]))
 
     private val _uiState = MutableStateFlow<PlayerUiState>(PlayerUiState.Loading())
     val uiState = _uiState.asStateFlow()
 
-    private val _eventChannel = Channel<PlayerUiEvent>()
-    val eventFlow = _eventChannel.receiveAsFlow()
+    private val _effect = Channel<PlayerUiEffect>()
+    val effect = _effect.receiveAsFlow()
 
-    private val _isPlayerVisible = MutableStateFlow(false)
-    val isPlayerVisible = _isPlayerVisible.asStateFlow()
+    private val isPlaybackReady: Boolean
+        get() = _uiState.value is PlayerUiState.Success
 
-    private val _shouldMountPlayer = MutableStateFlow(false)
-    val shouldMountPlayer = _shouldMountPlayer.asStateFlow()
+    var playerView: TextureView? = null
 
-    private var isPlaybackReady = false
+    private var currentSourceIndex = 0
+    private var lastExecutionWasForced = false
+
+    private var controlsHideJob: Job? = null
+    private var progressPollerJob: Job? = null
+
+    private var rawMetadata: PlayerMetadata? = null
 
     init {
-
-        Log.i("PlayerVM", "Iniciando PlayerViewModel")
-
-        playerManager.setPlaybackReadyCallback {
-            isPlaybackReady = true
-            val info = currentHeaderInfo ?: VideoMetadata("Desconocido", null, false)
-            _uiState.value = PlayerUiState.Success(info)
-            _shouldMountPlayer.value = true
-            hasRetriedWithInvalidatedCache = false
-        }
-
-        playerManager.setPlaybackErrorCallback {
-            handlePlaybackError()
-            _isPlayerVisible.value = false
-            _shouldMountPlayer.value = false
-            isPlaybackReady = false
-        }
-
-        loadContentAndPlayFirstSource()
-
+        setupPlayerListeners()
+        loadAsset(initialMediaId, initialMediaType)
     }
 
-    fun onPlayerViewReady() {
-        Log.i("PlayerVM", "PlayerView ready")
-        if (isPlaybackReady) {
-            _isPlayerVisible.value = true
+    fun onEvent(event: PlayerUiEvent) {
+        when (event) {
+            // --- Controles de Reproducción ---
+            is PlayerUiEvent.OnPlayPauseToggle -> togglePlayPause()
+            is PlayerUiEvent.OnNextClick -> loadNextAsset()
+            is PlayerUiEvent.OnPrevClick -> loadPrevAsset()
+            is PlayerUiEvent.OnSeekTo -> seekTo(event.position)
+            is PlayerUiEvent.OnSeekRelative -> seekRelative(event.offset)
+
+            is PlayerUiEvent.OnToggleSaved -> toggleSaved()
+
+            // --- Gestión de Interfaz (Controles y Menús) ---
+            is PlayerUiEvent.OnUserInteract -> {
+                if (event.platform == Platform.MOBILE) {
+                    toggleControls()
+                } else {
+                    showControlsAndResetTimer()
+                }
+            }
+            is PlayerUiEvent.OnDismissControls -> hideControls()
+            is PlayerUiEvent.OnSettingsClick -> openSettingsMenu()
+            is PlayerUiEvent.OnMenuNavigate -> navigateToMenu(event.state)
+            is PlayerUiEvent.OnMenuDismiss -> closeSettingsMenu()
+            is PlayerUiEvent.OnQualityChange -> changeQuality(event.quality)
+
+            // --- Ciclo de Vida y Navegación ---
+            is PlayerUiEvent.OnPlayerReady -> onPlayerViewReady(event.playerView)
+            is PlayerUiEvent.OnLifecyclePause -> pausePlayback()
+            is PlayerUiEvent.OnLifecycleResume -> resumePlayback()
+            is PlayerUiEvent.OnBackClick -> handleBackNavigation()
         }
     }
 
-    private fun loadContentAndPlayFirstSource() {
+    private fun loadAsset(id: String, mediaType: MediaType) {
 
         viewModelScope.launch {
-            _uiState.value = PlayerUiState.Loading("Consultando Cache...")
-            Log.i("PlayerVM", "Consultando Cache")
-            _shouldMountPlayer.value = false
-            isPlaybackReady = false
-            val contentFound = loadContentMetadata()
-            if (!contentFound || sources.isEmpty()) {
-                _uiState.value = PlayerUiState.Error("No se encontraron fuentes de video.")
-                _eventChannel.send(PlayerUiEvent.NavigateBackWithError("No se encontraron fuentes."))
+
+            _uiState.update { PlayerUiState.Loading("Consultando contenido...") }
+            currentSourceIndex = 0
+
+            playerManager.pause()
+
+            val metadata = getPlayerMetadataUseCase(id, mediaType)
+            rawMetadata = metadata
+
+            if (metadata == null || metadata.sources.isEmpty()) {
+                _uiState.update { PlayerUiState.Error("No se encontraron fuentes de video.") }
                 return@launch
             }
-            playCurrentSource()
+
+            playCurrentSource(metadata)
+
         }
 
     }
 
-    private suspend fun loadContentMetadata(): Boolean {
-        return when (contentType) {
-            ContentType.MOVIE -> {
-                val movie = getMovieByIdUseCase(contentId) ?: return false
-                sources = movie.sources
+    private fun playCurrentSource(metadata: PlayerMetadata, forceRefresh: Boolean = false) {
 
-                // Mapeamos a nuestro modelo de UI
-                currentHeaderInfo = VideoMetadata(
-                    title = movie.localizedName,
-                    subtitle = null, // Películas no tienen subtítulo
-                    isLive = false
-                )
-                true
-            }
-            ContentType.SERIE -> {
-                val episode = getSerieContentByIdUseCase(contentId) ?: return false
-                sources = episode.sources
-
-                currentHeaderInfo = VideoMetadata(
-                    title = if (episode.name.isEmpty()) "Episodio ${episode.order}" else episode.localizedName,
-                    subtitle = "Episodio ${episode.order}",
-                    isLive = false
-                )
-                true
-            }
-            ContentType.CHANNEL -> {
-                val channel = getChannelByIdUseCase(contentId) ?: return false
-                sources = channel.sources
-
-                currentHeaderInfo = VideoMetadata(
-                    title = channel.localizedName,
-                    subtitle = null,
-                    isLive = true // <--- Marcamos como TV en Vivo
-                )
-                true
-            }
-            ContentType.ANIME -> {
-                val animeEp = getAnimeContentByIdUseCase(contentId) ?: return false
-                sources = animeEp.sources
-
-                currentHeaderInfo = VideoMetadata(
-                    title = if (animeEp.name.isEmpty()) "Episodio ${animeEp.order}" else animeEp.localizedName,
-                    subtitle = "Episodio ${animeEp.order}",
-                    isLive = false
-                )
-                true
-            }
-            else -> false
-        }
-    }
-
-    private fun playCurrentSource(forceRefresh: Boolean = false) {
-
+        val sources = metadata.sources
         if (currentSourceIndex >= sources.size) {
-
-            viewModelScope.launch {
-
-                val exception = AllSourcesFailedException(
-                    contentId = contentId,
-                    contentType = contentType,
-                    sourcesTried = sources.size
-                )
-
-                val errorContext = mapOf(
-                    "content_id" to exception.contentId,
-                    "content_type" to exception.contentType,
-                    "total_sources_tried" to exception.sourcesTried
-                )
-
-                reporter.recordException(exception, errorContext)
-
-                Log.e("PlayerVM", "Ninguna de las Fuentes Funciona, se informo a Crashlytics")
-
-                _eventChannel.send(PlayerUiEvent.NavigateBackWithError("Todas nuestras fuentes fallaron para reproducir este contenido. Ya se ha generado un informe a nuestro equipo para solucionar este inconveniente."))
-
-            }
-
+            _uiState.update { PlayerUiState.Error("Todas las fuentes fallaron.") }
             return
-
         }
 
         val source = sources[currentSourceIndex]
+        val sourceName = "Fuente #${currentSourceIndex + 1}"
 
         viewModelScope.launch {
 
-            // 2. Mensaje de carga de fuente específica
-            // Muestra "Intentando fuente 1 de 4..." o "Cargando servidor: Alpha..."
-            val sourceName = "Fuente #${currentSourceIndex + 1}"
-            val progressMsg = "Conectando con $sourceName (${currentSourceIndex + 1}/${sources.size})"
+            _uiState.update { PlayerUiState.Loading("Conectando con $sourceName...") }
 
-            _uiState.value = PlayerUiState.Loading(progressMsg) // <--- AQUI
+            prepareStreamUseCase(
+                assetId = metadata.assetId,
+                mediaType = metadata.mediaType,
+                source = source,
+                forceRefresh = forceRefresh
+            ) { status ->
+                if (_uiState.value is PlayerUiState.Loading) {
+                    _uiState.update { PlayerUiState.Loading("Conectando con $sourceName: $status") }
+                }
+            }.fold(
+                onSuccess = { playbackData ->
 
-            processStreamUseCase(
-                contentType,
-                contentId,
-                source,
-                forceRefresh,
-                onReportStatus = { statusMessage ->
-                    // Actualizamos el estado de carga con el mensaje detallado del dominio
-                    // Ejemplo: "Conectando con Fuente #1: Consultando base de datos remota..."
-                    _uiState.value = PlayerUiState.Loading(
-                        "Conectando con $sourceName: $statusMessage"
-                    )
+                    val startPos = rawMetadata?.mediaType.let {
+                        if (it != MediaType.CHANNEL) {
+                            if (metadata.isFinished) 0L else metadata.lastPosition
+                        } else null
+                    }
+                    playerManager.prepareAndPlay(playbackData, startPos)
+
+                },
+                onFailure = {
+                    playNextSource(metadata)
                 }
             )
-                .fold(
-                    onSuccess = { playbackData ->
-                        //_uiState.value = PlayerUiState.Loading("Estamos casi listos...")
-                        playerManager.prepareAndPlay(playbackData)
-                    },
-                    onFailure = { error ->
-                        Log.e("PlayerVM", "Fallo al procesar fuente. Probando la siguiente.", error)
-                        playNextSource()
-                    }
-                )
+
         }
 
     }
 
-    // Paso 3: Reacciona a un error de ExoPlayer
-    private fun handlePlaybackError() {
+    private fun playNextSource(metadata: PlayerMetadata) {
 
-        if (hasRetriedWithInvalidatedCache) {
-            Log.w("PlayerVM", "El reintento con caché invalidado también falló. Probando siguiente fuente.")
-            playNextSource()
+        val sources = metadata.sources
+
+        if (!lastExecutionWasForced) {
+            lastExecutionWasForced = true
+            playCurrentSource(metadata, forceRefresh = true)
+            return
+        }
+
+        lastExecutionWasForced = false
+        currentSourceIndex++
+
+        if (currentSourceIndex < sources.size) {
+            playCurrentSource(metadata)
         } else {
-            // Es el primer fallo de reproducción para esta fuente. Invalidamos caché y reintentamos.
-            Log.i("PlayerVM", "Fallo de ExoPlayer. Invalidando caché y reintentando la misma fuente.")
-            hasRetriedWithInvalidatedCache = true
-            viewModelScope.launch {
-                _uiState.value = PlayerUiState.Loading("Error de reproducción. Limpiando caché...") // <--- AQUI
-                invalidateCacheForCurrentSource()
-                // Volvemos a procesar la MISMA fuente, pero forzando la recarga.
-                _uiState.value = PlayerUiState.Loading("Reintentando conexión con el servidor...") // <--- AQUI
-                playCurrentSource(forceRefresh = true)
+            _uiState.update {
+                PlayerUiState.Error("No se pudo reproducir ninguna de las fuentes disponibles.")
+            }
+        }
+    }
+
+    private fun startProgressPoller() {
+
+        progressPollerJob?.cancel()
+
+        progressPollerJob = viewModelScope.launch {
+
+            var lastSavedTime = 0L
+
+            while (isActive) {
+
+                val player = playerManager.exoPlayer
+
+                if (player.isPlaying) {
+
+                    val currentPos = player.currentPosition
+                    val duration = player.duration
+
+                    updatePlaybackState { it.copy(currentPosition = currentPos) }
+
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - lastSavedTime >= 10_000) {
+                        saveProgress(currentPos, duration)
+                        lastSavedTime = currentTime
+                    }
+
+                }
+
+                delay(1000)
+
             }
         }
 
     }
 
-    private fun playNextSource() {
-        currentSourceIndex++
-        hasRetriedWithInvalidatedCache = false
-        playCurrentSource()
+    private fun saveProgress(currentPos: Long, duration: Long) {
+
+        if (duration <= 0 || currentPos < 5000) return
+
+        val meta = rawMetadata ?: return
+        val isFinished = (currentPos.toFloat() / duration) > 0.90f
+
+        viewModelScope.launch(NonCancellable) {
+
+            val thumbnailPath = captureThumbnail()
+
+            val progress = meta.toMediaProgress(
+                thumbnailPath = thumbnailPath,
+                currentPos = currentPos,
+                totalDuration = duration,
+                isFinished = isFinished
+            )
+            upsertMediaProgressUseCase(progress)
+
+        }
+
     }
 
-    private suspend fun invalidateCacheForCurrentSource() {
-        when (contentType) {
-            ContentType.CHANNEL -> invalidateDrmKeyCacheUseCase(contentId)
-            ContentType.MOVIE, ContentType.SERIE, ContentType.ANIME ->
-                invalidateStreamUrlCacheUseCase(contentId, contentType)
-            // 'movie' no tiene lógica de caché invalidable por ahora, no se hace nada.
+    private suspend fun captureThumbnail(): String? {
+
+        try {
+
+            val textureView = playerView ?: return null
+            val assetId = rawMetadata?.assetId ?: return null
+
+            val bitmap = withContext(Dispatchers.Main) {
+                textureView.bitmap
+            } ?: return null
+
+            return withContext(Dispatchers.IO) {
+
+                val ratio = 320f / bitmap.width
+                val height = (bitmap.height * ratio).toInt()
+
+                val resized = bitmap.scale(320, height)
+                bitmap.recycle()
+
+                val thumbnailDir = File(context.filesDir, "thumbnails")
+                thumbnailDir.mkdirs()
+
+                val file = File(thumbnailDir, "thumb_$assetId.jpg")
+                FileOutputStream(file).use { out ->
+                    resized.compress(Bitmap.CompressFormat.JPEG, 80, out)
+                }
+
+                resized.recycle()
+
+                file.absolutePath
+
+            }
+
+        } catch (e: Exception) {
+            return null
         }
+
+    }
+
+    private fun updatePlaybackState(transform: (PlaybackState) -> PlaybackState) {
+        _uiState.update { current ->
+            if (current is PlayerUiState.Success) {
+                current.copy(playback = transform(current.playback))
+            } else current
+        }
+    }
+
+    private fun updateControlsState(transform: (ControlsState) -> ControlsState) {
+        _uiState.update { current ->
+            if (current is PlayerUiState.Success) {
+                current.copy(controls = transform(current.controls))
+            } else current
+        }
+    }
+
+    // --- Controles de Reproducción ---
+    private fun togglePlayPause() {
+
+        val player = playerManager.exoPlayer
+
+        if (player.isPlaying) {
+            player.pause()
+        } else {
+            player.play()
+        }
+
+        showControlsAndResetTimer()
+
+    }
+
+    private fun loadNextAsset() {
+        rawMetadata?.nextContentId?.let { nextId ->
+            progressPollerJob?.cancel()
+            loadAsset(nextId, initialMediaType)
+        }
+    }
+
+    private fun loadPrevAsset() {
+        rawMetadata?.prevContentId?.let { prevId ->
+            progressPollerJob?.cancel()
+            loadAsset(prevId, initialMediaType)
+        }
+    }
+
+    private fun seekTo(position: Long) {
+
+        playerManager.exoPlayer.seekTo(position)
+
+        showControlsAndResetTimer()
+
+    }
+
+    private fun seekRelative(offset: Long) {
+
+        val player = playerManager.exoPlayer
+
+        val newPosition = (player.currentPosition + offset).coerceIn(0, player.duration)
+        player.seekTo(newPosition)
+
+        showControlsAndResetTimer()
+
+    }
+
+    private fun toggleSaved() {
+
+        val meta = rawMetadata ?: return
+        val videoMetadata =  (uiState.value as? PlayerUiState.Success)?.videoMetadata ?: return
+
+        viewModelScope.launch {
+
+            toggleSaveStatusUseCase(ownerId = meta.ownerId, isSaved = !videoMetadata.isSaved)
+
+            _uiState.update { state ->
+                if (state is PlayerUiState.Success) {
+                    state.copy(
+                        videoMetadata = state.videoMetadata.copy(isSaved = !videoMetadata.isSaved)
+                    )
+                } else state
+            }
+
+        }
+
+    }
+
+    // --- Gestión de Interfaz (Controles y Menús) ---
+    private fun showControlsAndResetTimer() {
+
+        controlsHideJob?.cancel()
+
+        updateControlsState { it.copy(isVisible = true) }
+
+        if (playerManager.exoPlayer.isPlaying) {
+            controlsHideJob = viewModelScope.launch {
+                delay(4000)
+                updateControlsState { it.copy(isVisible = false, menuState = SettingsMenuState.NONE) }
+            }
+        }
+
+    }
+
+    private fun hideControls() {
+
+        controlsHideJob?.cancel()
+
+        updateControlsState {
+            it.copy(
+                isVisible = false,
+                menuState = SettingsMenuState.NONE
+            )
+        }
+
+    }
+
+    private fun toggleControls() {
+
+        val isCurrentlyVisible = (uiState.value as? PlayerUiState.Success)?.controls?.isVisible ?: false
+
+        if (isCurrentlyVisible) {
+            hideControls()
+        } else {
+            showControlsAndResetTimer()
+        }
+
     }
 
     @OptIn(UnstableApi::class)
-    fun getAvailableQualities(): List<VideoQuality> {
+    private fun openSettingsMenu() {
+
+        controlsHideJob?.cancel()
 
         val player = playerManager.exoPlayer
-        val videoGroups = player.currentTracks.groups.filter { it.type == C.TRACK_TYPE_VIDEO }
+        val availableQualities = player.getAvailableQualities()
 
-        val numericQualities = mutableListOf<VideoQuality>()
+        val params = player.trackSelectionParameters
 
-        // 2. Iteramos sobre los tracks disponibles para encontrar resoluciones
-        videoGroups.forEach { group ->
-            // Solo nos interesan los grupos soportados por el dispositivo
-            if (group.isSupported) {
-                for (i in 0 until group.length) {
-                    val format = group.getTrackFormat(i)
+        val isAutoEnabled = params.maxVideoWidth == Int.MAX_VALUE && params.overrides.isEmpty()
 
-                    // Filtramos tracks inválidos (a veces hay tracks sin resolución declarada)
-                    if (format.height > 0) {
-                        numericQualities.add(
-                            VideoQuality(
-                                height = format.height,
-                                bitrate = format.bitrate,
-                                label = "${format.height}p",
-                                isAuto = false
-                            )
-                        )
+        val currentQuality = if (isAutoEnabled) {
+            availableQualities.find { it.isAuto }
+        } else {
+            val currentMaxHeight = params.maxVideoHeight
+            availableQualities.find { !it.isAuto && it.height == currentMaxHeight }
+        } ?: availableQualities.first { it.isAuto }
+
+        _uiState.update { state ->
+            if (state is PlayerUiState.Success) {
+                state.copy(
+                    quality = state.quality.copy(
+                        qualities = availableQualities,
+                        currentQuality = currentQuality
+                    ),
+                    controls = state.controls.copy(menuState = SettingsMenuState.MAIN)
+                )
+            } else state
+        }
+
+    }
+
+    private fun navigateToMenu(state: SettingsMenuState) {
+        updateControlsState { it.copy(menuState = state) }
+    }
+
+    private fun closeSettingsMenu() {
+
+        updateControlsState { it.copy(menuState = SettingsMenuState.NONE) }
+
+        showControlsAndResetTimer()
+
+    }
+
+    private fun changeQuality(quality: VideoQuality) {
+
+        playerManager.exoPlayer.setVideoQuality(quality)
+
+        _uiState.update { current ->
+            if (current is PlayerUiState.Success) {
+                current.copy(
+                    quality = current.quality.copy(currentQuality = quality),
+                    controls = current.controls.copy(menuState = SettingsMenuState.NONE)
+                )
+            } else current
+        }
+
+        showControlsAndResetTimer()
+
+    }
+
+    // --- Ciclo de Vida y Navegación ---
+    private fun onPlayerViewReady(playerView: TextureView) {
+        this.playerView = playerView
+        if (isPlaybackReady) {
+            updateControlsState { it.copy(isVisible = true) }
+        }
+
+    }
+
+    private fun pausePlayback() {
+
+        playerManager.pause()
+
+        controlsHideJob?.cancel()
+
+        updateControlsState { it.copy(isVisible = true) }
+
+    }
+
+    private fun resumePlayback() {
+
+        playerManager.resume()
+
+        showControlsAndResetTimer()
+
+    }
+
+    private fun handleBackNavigation() {
+
+        _uiState.update { PlayerUiState.Closing }
+
+        val player = playerManager.exoPlayer
+        saveProgress(player.currentPosition, player.duration)
+
+        playerManager.pause()
+        viewModelScope.launch {
+            _effect.send(PlayerUiEffect.NavigateBack)
+        }
+
+    }
+
+    private fun setupPlayerListeners() {
+
+        playerManager.exoPlayer.addListener(object : Player.Listener {
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+
+                updatePlaybackState { it.copy(isPlaying = isPlaying) }
+
+                if (!isPlaying) {
+                    controlsHideJob?.cancel()
+                    updateControlsState { it.copy(isVisible = true) }
+                } else {
+                    showControlsAndResetTimer()
+                }
+
+            }
+
+            override fun onPlaybackStateChanged(state: Int) {
+
+                updatePlaybackState { it.copy(isBuffering = state == Player.STATE_BUFFERING) }
+
+                when (state) {
+                    Player.STATE_READY -> {
+                        if (_uiState.value !is PlayerUiState.Success) {
+
+                            _uiState.update {
+                                PlayerUiState.Success(
+                                    videoMetadata = rawMetadata!!.toVideoMetadata(),
+                                    playback = PlaybackState(
+                                        isPlaying = true,
+                                        totalDuration = playerManager.exoPlayer.duration,
+                                        isBuffering = false
+                                    ),
+                                    controls = ControlsState(isVisible = true),
+                                    quality = QualityState()
+                                )
+                            }
+
+                            startProgressPoller()
+                            showControlsAndResetTimer()
+
+                        }
+                    }
+                    Player.STATE_ENDED -> {
+
+                        val player = playerManager.exoPlayer
+                        saveProgress(player.currentPosition, player.duration)
+
+                        progressPollerJob?.cancel()
+
+                        if (rawMetadata?.nextContentId != null) {
+                            loadNextAsset()
+                        } else {
+                            handleBackNavigation()
+                        }
+
                     }
                 }
+
+            }
+
+            override fun onTracksChanged(tracks: Tracks) {
+
+            }
+
+        })
+
+        playerManager.setPlaybackErrorCallback { error ->
+            handlePlaybackError(error)
+        }
+
+    }
+
+    private fun handlePlaybackError(error: PlaybackException) {
+
+        val errorCode = error.errorCode
+
+        when (errorCode) {
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> {
+                _uiState.update { PlayerUiState.Error("Error de conexión") }
+            }
+            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS, PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND -> {
+
+                val currentPos = playerManager.exoPlayer.currentPosition
+                val duration = playerManager.exoPlayer.duration
+
+                saveProgress(currentPos, duration)
+
+                _uiState.update { currentState ->
+                    if (currentState is PlayerUiState.Success) {
+                        PlayerUiState.Loading("Error en la fuente actual. Reintentando...")
+                    } else currentState
+                }
+
+                rawMetadata?.let { metadata ->
+                    playNextSource(metadata)
+                } ?: run {
+                    _uiState.update { PlayerUiState.Error("Fallo crítico en la reproducción.") }
+                }
+
+            }
+            else -> {
+                _uiState.update { PlayerUiState.Error("Error desconocido") }
             }
         }
 
-        // 3. Limpieza y Orden:
-        // - distinctBy: A veces el m3u8 tiene varias variantes de 1080p con diferente bitrate.
-        //               Para la UI simple, nos quedamos con una por resolución.
-        // - sortedByDescending: Queremos que salga primero 1080p, luego 720p, etc.
-        val sortedResolutions = numericQualities
-            .distinctBy { it.height }
-            .sortedByDescending { it.height }
-
-        var currentHeight = player.videoSize.height
-
-        // 3. Creamos la opción "Automático"
-        val autoOption = VideoQuality(
-            height = if (currentHeight != 0) currentHeight else 0,
-            bitrate = 0,
-            label = "Automático",
-            isAuto = true
-        )
-
-        // 4. Retornamos: [Auto] + [Lista Ordenada]
-        return listOf(autoOption) + sortedResolutions
-    }
-
-    fun changeVideoQuality(quality: VideoQuality) {
-        val player = playerManager.exoPlayer
-        val parameters = player.trackSelectionParameters.buildUpon()
-
-        if (quality.isAuto) {
-            // MODO AUTO:
-            // Limpiamos cualquier restricción de resolución o bitrate.
-            // Esto devuelve el control al algoritmo adaptativo de ExoPlayer.
-            parameters
-                .setMaxVideoBitrate(Int.MAX_VALUE)
-        } else {
-            // MODO MANUAL:
-            // Forzamos a ExoPlayer a usar una resolución específica.
-            // Al poner Min y Max iguales, lo obligamos a quedarse en ese carril.
-            parameters
-                .setMaxVideoSize(quality.height * 16 / 9, quality.height) // Calculamos ancho aprox o usamos max
-                .setMinVideoSize(0, quality.height) // Forzamos altura mínima
-                .setMaxVideoBitrate(Int.MAX_VALUE) // Dejamos bitrate libre para esa resolución
-
-            // NOTA: Una forma más agresiva si la anterior falla es:
-            // .setMaxVideoSize(Int.MAX_VALUE, quality.height)
-            // .setMinVideoSize(0, quality.height)
-            // ExoPlayer intentará cumplir la restricción de altura.
-        }
-
-        player.trackSelectionParameters = parameters.build()
-
-        Log.i("PlayerVM", "Calidad cambiada a: ${quality.label}")
-    }
-
-    fun onNavigateBack() {
-        onPause()
-        isPlaybackReady = false
-        _shouldMountPlayer.value = false
-        viewModelScope.launch {
-            _eventChannel.send(PlayerUiEvent.NavigateBack)
-        }
-    }
-
-    fun onPause() {
-        _isPlayerVisible.value = false
-        playerManager.pause()
-    }
-
-    fun onResume() {
-        playerManager.resume()
-        if (isPlaybackReady && _shouldMountPlayer.value) {
-            _isPlayerVisible.value = true
-        }
     }
 
     override fun onCleared() {
         super.onCleared()
-        isPlaybackReady = false
-        _shouldMountPlayer.value = false
         playerManager.releasePlayer()
+        controlsHideJob?.cancel()
+        progressPollerJob?.cancel()
     }
 
 }

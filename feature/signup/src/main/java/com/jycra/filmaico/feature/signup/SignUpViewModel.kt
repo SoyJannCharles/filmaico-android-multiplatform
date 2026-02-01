@@ -2,7 +2,8 @@ package com.jycra.filmaico.feature.signup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jycra.filmaico.domain.user.usecase.SignUpUseCase
+import com.jycra.filmaico.domain.user.usecase.RegisterDeviceSessionUseCase
+import com.jycra.filmaico.domain.user.usecase.CreateUserUseCase
 import com.jycra.filmaico.domain.user.util.AuthResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -15,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SignUpViewModel @Inject constructor(
-    private val signUpUseCase: SignUpUseCase
+    private val createUserUseCase: CreateUserUseCase,
+    private val registerDeviceSessionUseCase: RegisterDeviceSessionUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SignUpUiState())
@@ -26,10 +28,10 @@ class SignUpViewModel @Inject constructor(
 
     fun onEvent(event: SignUpUiEvent) {
         when (event) {
-            is SignUpUiEvent.OnEmailChange -> _uiState.update { it.copy(email = event.email) }
-            is SignUpUiEvent.OnPasswordChange -> _uiState.update { it.copy(password = event.password) }
-            SignUpUiEvent.OnSignUpClick -> signUp()
-            SignUpUiEvent.OnSignInClick -> signIn()
+            is SignUpUiEvent.EmailChange -> _uiState.update { it.copy(email = event.email) }
+            is SignUpUiEvent.PasswordChange -> _uiState.update { it.copy(password = event.password) }
+            SignUpUiEvent.SignUpTriggered -> signUp()
+            SignUpUiEvent.SignInTriggered -> signIn()
         }
     }
 
@@ -42,19 +44,21 @@ class SignUpViewModel @Inject constructor(
 
         viewModelScope.launch {
 
-            _uiState.update { state ->
-                state.copy(isLoading = true, error = null)
-            }
+            _uiState.update { state -> state.copy(isLoading = true, error = null) }
 
-            val result = signUpUseCase(email, password)
-
-            _uiState.update { state ->
-                state.copy(isLoading = false)
-            }
-
+            val result = createUserUseCase(email, password)
             when (result) {
-                is AuthResult.Success -> _effect.send(SignUpUiEffect.NavigateToPay)
-                is AuthResult.Failure -> _uiState.update { it.copy(error = result.failure) }
+                is AuthResult.Success -> {
+                    try {
+                        registerDeviceSessionUseCase()
+                        _effect.send(SignUpUiEffect.NavigateToSubscription)
+                    } catch (e: Exception) {
+
+                    }
+                }
+                is AuthResult.Failure -> {
+                    _uiState.update { it.copy(isLoading = false, error = result.failure) }
+                }
             }
 
         }
@@ -63,7 +67,7 @@ class SignUpViewModel @Inject constructor(
 
     private fun signIn() {
         viewModelScope.launch {
-            _effect.send(SignUpUiEffect.NavigateToSignIn)
+            _effect.send(SignUpUiEffect.NavigateToAuth)
         }
     }
 
