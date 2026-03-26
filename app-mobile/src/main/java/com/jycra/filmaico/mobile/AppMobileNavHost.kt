@@ -73,6 +73,7 @@ fun AppMobileNavHost(
         )
 
         signInRoute(
+            platform = Platform.MOBILE,
             onNavigateToSignUp = {
                 navController.navigateToSignUp()
             },

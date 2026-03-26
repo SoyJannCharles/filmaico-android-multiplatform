@@ -68,6 +68,7 @@ fun MediaDetailScaffold(
             }
         }
         Platform.TV -> {
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()

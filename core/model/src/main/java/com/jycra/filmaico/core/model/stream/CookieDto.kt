@@ -1,8 +1,10 @@
 package com.jycra.filmaico.core.model.stream
 
 import androidx.annotation.Keep
+import com.google.firebase.firestore.IgnoreExtraProperties
 
 @Keep
+@IgnoreExtraProperties
 data class CookieDto(
     val name: String,
     val value: String,

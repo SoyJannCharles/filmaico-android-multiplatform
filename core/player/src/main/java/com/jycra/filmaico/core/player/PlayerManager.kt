@@ -39,10 +39,6 @@ class PlayerManager @Inject constructor(
     private var onReadyCallback: (() -> Unit)? = null
     private var onErrorCallback: ((error: PlaybackException) -> Unit)? = null
 
-    fun setPlaybackReadyCallback(callback: () -> Unit) {
-        this.onReadyCallback = callback
-    }
-
     fun setPlaybackErrorCallback(callback: (error: PlaybackException) -> Unit) {
         this.onErrorCallback = callback
     }
@@ -80,25 +76,7 @@ class PlayerManager @Inject constructor(
     }
 
     @OptIn(UnstableApi::class)
-    fun prepareAndPlay(playbackData: PlaybackData, startPosition: Long?) {
-
-        exoPlayer.stop()
-        exoPlayer.clearMediaItems()
-
-        val mediaSource = createMediaSource(playbackData)
-
-        exoPlayer.setMediaSource(mediaSource)
-        exoPlayer.prepare()
-
-        startPosition?.let {
-            exoPlayer.seekTo(startPosition)
-        }
-
-        exoPlayer.play()
-    }
-
-    @OptIn(UnstableApi::class)
-    private fun createMediaSource(playbackData: PlaybackData): MediaSource {
+    fun createMediaSource(playbackData: PlaybackData): MediaSource {
 
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)

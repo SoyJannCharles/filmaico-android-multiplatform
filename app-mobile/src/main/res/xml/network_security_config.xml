@@ -8,6 +8,13 @@
 
     <domain-config cleartextTrafficPermitted="true">
 
+        <domain includeSubdomains="true">flow-live-t.dlt.qwilted-cds.cqloud.com</domain>
+        <domain includeSubdomains="true">qn-01282-slo-1-01-1---7482-vm9d.http.global.dns.qwilted-cds.cqloud.com</domain>
+        <domain includeSubdomains="true">qn-01282-slo-1-04-1---7482-vm9d.http.global.dns.qwilted-cds.cqloud.com</domain>
+        <domain includeSubdomains="true">qn-01282-slo-1-05-2---7482-vm9d.http.global.dns.qwilted-cds.cqloud.com</domain>
+        <domain includeSubdomains="true">qn-01282-slo-1-07-2---7482-vm9d.http.global.dns.qwilted-cds.cqloud.com</domain>
+        <domain includeSubdomains="true">qn-01282-hor-1-06-1---7482-vm9d.http.global.dns.qwilted-cds.cqloud.com</domain>
+
         <domain includeSubdomains="true">mtd.llc</domain>
 
         <domain includeSubdomains="true">api.argentinatv.live</domain>
@@ -15,14 +22,6 @@
         <domain includeSubdomains="true">cvattv.com.ar</domain>
         <domain includeSubdomains="true">plpro.org</domain>
         <domain includeSubdomains="true">ts2.tvcluboficial.com</domain>
-
-        <domain includeSubdomains="true">planettvweb.com</domain>
-        <domain includeSubdomains="true">23.153.217.93</domain>
-        <domain includeSubdomains="true">23.153.216.177</domain>
-
-        <domain includeSubdomains="true">195.66.210.10</domain>
-        <domain includeSubdomains="true">64.20.38.234</domain>
-        <domain includeSubdomains="true">23.162.200.121</domain>
 
     </domain-config>
 </network-security-config>

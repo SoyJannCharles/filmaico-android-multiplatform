@@ -8,14 +8,25 @@ import com.jycra.filmaico.core.ui.util.formatDurationLabels
 import com.jycra.filmaico.domain.common.content.model.ContentStatus
 import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.media.util.extesion.localizedImageUrl
 import com.jycra.filmaico.domain.media.util.extesion.localizedName
 import com.jycra.filmaico.domain.media.util.extesion.localizedSynopsis
+import java.util.Calendar
 
 fun Media.toUiMedia(forcedVariant: MediaCardVariant? = null): UiMedia {
 
     val defaultVariant = when (this.ownerMediaType) {
         MediaType.CHANNEL -> MediaCardVariant.BACKDROP_HORIZONTAL
         else -> MediaCardVariant.POSTER_VERTICAL
+    }
+
+    val name = when (this) {
+        is Media.Asset -> {
+            this.localizedName.ifEmpty { "Episodio ${this.number}" }
+        }
+        is Media.Container -> {
+            this.localizedName
+        }
     }
 
     val label = when (this) {
@@ -29,7 +40,7 @@ fun Media.toUiMedia(forcedVariant: MediaCardVariant? = null): UiMedia {
                 }
 
                 this.mediaType == MediaType.EPISODE -> {
-                    "Episodio ${this.order} | ${formatDurationLabels(this.duration ?: 0)}"
+                    "Episodio ${this.number} | ${formatDurationLabels(this.duration ?: 0)}"
                 }
 
                 this.mediaType == MediaType.OVA -> {
@@ -55,6 +66,7 @@ fun Media.toUiMedia(forcedVariant: MediaCardVariant? = null): UiMedia {
             }
 
             statusLabel
+
         }
 
     }
@@ -63,10 +75,10 @@ fun Media.toUiMedia(forcedVariant: MediaCardVariant? = null): UiMedia {
         id = this.id,
         mediaType = this.mediaType,
         variant = forcedVariant ?: defaultVariant,
-        name = this.localizedName,
+        name = name,
         label = label,
-        imageUrl = this.imageUrl,
-        order = (this as? Media.Asset)?.order ?: 0,
+        imageUrl = this.localizedImageUrl,
+        order = (this as? Media.Asset)?.number ?: 0,
         duration = (this as? Media.Asset)?.duration ?: 0,
         lastPosition = (this as? Media.Asset)?.lastPosition ?: 0,
         isFinished = (this as? Media.Asset)?.isFinished ?: false
@@ -79,12 +91,20 @@ fun Media.Container.toUiDetail(selectedSeasonId: String?): UiMediaDetail {
     val activeSeason = this.seasons.find { it.id == selectedSeasonId }
         ?: this.seasons.firstOrNull()
 
+    val releaseYear = firstAirDate?.let { millis ->
+        val calendar = Calendar.getInstance().apply { timeInMillis = millis }
+        calendar.get(Calendar.YEAR).toString()
+    } ?: airDate?.let { millis ->
+        val calendar = Calendar.getInstance().apply { timeInMillis = millis }
+        calendar.get(Calendar.YEAR).toString()
+    } ?: ""
+
     return UiMediaDetail(
         id = this.id,
         name = this.localizedName,
         synopsis = this.localizedSynopsis,
-        imageUrl = this.imageUrl,
-        releaseYear = this.releaseYear?.toString() ?: "",
+        imageUrl = this.localizedImageUrl,
+        releaseYear = releaseYear,
         mediaType = this.mediaType,
         status = this.status,
         seasonCount = this.seasons.size,

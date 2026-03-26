@@ -33,13 +33,15 @@ fun MediaEntity.toContainer(
     return Media.Container(
         id = this.id,
         name = this.name,
+        synopsis = this.synopsis,
         imageUrl = this.imageUrl,
         tags = tags,
         mediaType = mediaType,
         ownerMediaType = ownerMediaType,
         isSaved = this.isSaved,
-        synopsis = this.synopsis,
-        releaseYear = this.releaseYear,
+        firstAirDate = this.firstAirDate,
+        lastAirDate = this.lastAirDate,
+        airDate = this.airDate,
         status = ContentStatus.fromValue(this.status),
         seasons = seasons
     )
@@ -57,6 +59,7 @@ fun MediaEntity.toAsset(
     return Media.Asset(
         id = this.id,
         name = this.name,
+        synopsis = this.synopsis,
         imageUrl = this.imageUrl,
         tags = emptyList(),
         mediaType = mediaType,
@@ -64,8 +67,9 @@ fun MediaEntity.toAsset(
         isSaved = this.isSaved,
         seasonId = this.seasonId,
         ownerId = this.ownerId,
+        airDate = this.airDate,
         duration = this.duration,
-        order = this.order,
+        number = this.number,
         sources = this.sources.mapNotNull { it.toDomain() },
         isLive = mediaType == MediaType.CHANNEL,
         lastPosition = lastPosition,

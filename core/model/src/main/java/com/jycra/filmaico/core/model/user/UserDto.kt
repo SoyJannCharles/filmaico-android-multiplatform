@@ -9,7 +9,8 @@ import com.google.firebase.firestore.IgnoreExtraProperties
 data class UserDto(
     @DocumentId
     val uid: String = "",
-    val email: String = "",
-    val subscription: SubscriptionDto = SubscriptionDto(),
+    val email: String? = null,
+    val phone: String? = null,
+    val subscription: SubscriptionDto? = null,
     val activeSessions: List<SessionDto> = emptyList()
 )

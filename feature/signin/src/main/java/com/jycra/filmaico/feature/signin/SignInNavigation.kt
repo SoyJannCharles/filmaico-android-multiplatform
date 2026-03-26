@@ -3,15 +3,18 @@ package com.jycra.filmaico.feature.signin
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.navigation.route.AppRoutes
 
 fun NavGraphBuilder.signInRoute(
+    platform: Platform,
     onNavigateToSignUp: () -> Unit,
     onNavigateToSubscription: () -> Unit,
     onNavigateToMain: () -> Unit
 ) {
     composable(route = AppRoutes.SIGN_IN) {
         SignInRoute(
+            platform = platform,
             onNavigateToSignUp = onNavigateToSignUp,
             onNavigateToSubscription = onNavigateToSubscription,
             onNavigateToMain = onNavigateToMain

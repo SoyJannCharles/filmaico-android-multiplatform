@@ -4,6 +4,7 @@ import com.jycra.filmaico.domain.history.repository.MediaProgressRepository
 import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.model.metadata.PlayerMetadata
 import com.jycra.filmaico.domain.media.repository.MediaRepository
+import com.jycra.filmaico.domain.media.util.extesion.localizedImageUrl
 import javax.inject.Inject
 
 class GetPlayerMetadataUseCase @Inject constructor(
@@ -29,9 +30,9 @@ class GetPlayerMetadataUseCase @Inject constructor(
             mediaType = asset.mediaType,
             ownerMediaType = asset.ownerMediaType,
             name = asset.name,
-            imageUrl = asset.imageUrl,
+            imageUrl = asset.localizedImageUrl,
             isSaved = asset.isSaved,
-            order = asset.order ?: 0,
+            order = asset.number ?: 0,
             duration = asset.duration?.let { it * 1000L } ?: 0,
             lastPosition = progress?.lastPosition ?: 0L,
             isFinished = progress?.isFinished ?: false,

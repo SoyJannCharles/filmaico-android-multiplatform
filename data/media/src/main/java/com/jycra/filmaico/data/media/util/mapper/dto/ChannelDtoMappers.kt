@@ -17,7 +17,7 @@ fun ChannelDto.toMappingResult(): MediaMappingResult {
         seasonId = null,
         ownerId = null,
         name = this.name,
-        imageUrl = this.iconUrl,
+        imageUrl = mapOf("default" to this.iconUrl),
         sources = this.sources
     )
 

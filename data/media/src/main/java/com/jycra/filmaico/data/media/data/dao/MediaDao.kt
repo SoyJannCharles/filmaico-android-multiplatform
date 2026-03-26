@@ -40,49 +40,63 @@ interface MediaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSeasons(seasons: List<MediaSeasonEntity>)
 
-    @Query("""
+    @Query(
+        """
         UPDATE media SET 
         name = :name, 
         imageUrl = :imageUrl, 
         sources = :sources, 
         synopsis = :synopsis,
-        releaseYear = :releaseYear,
+        firstAirDate = :firstAirDate,
+        lastAirDate = :lastAirDate,
+        airDate = :airDate,
         status = :status,
         duration = :duration,
-        `order` = :order
+        number = :number
         WHERE id = :id
-    """)
+    """
+    )
     suspend fun updateMediaSelective(
         id: String,
         name: Map<String, String>,
-        imageUrl: String,
+        imageUrl: Map<String, String>,
         sources: List<StreamDto>,
         synopsis: Map<String, String>,
-        releaseYear: Int?,
+        firstAirDate: Long? = null,
+        lastAirDate: Long? = null,
+        airDate: Long? = null,
         status: String?,
         duration: Long?,
-        order: Int?
+        number: Int?
     )
 
     @Transaction
-    suspend fun upsertMetadata(
+    suspend fun syncMediaWithCleanup(
         media: List<MediaEntity>,
         tags: List<MediaTagCrossRef>,
-        seasons: List<MediaSeasonEntity> = emptyList()
+        mediaType: String
     ) {
 
-        media.forEach { item ->
-            val id = insertMediaIgnore(listOf(item)).first()
-            if (id == -1L) {
+        val incomingIds = media.map { it.id }
+        deleteOrphanMedia(mediaType = mediaType, remainingIds =  incomingIds )
+
+        val insertResults = insertMediaIgnore(media)
+
+        val toUpdate = media.filterIndexed { index, _ -> insertResults[index] == -1L }
+
+        if (toUpdate.isNotEmpty()) {
+            toUpdate.forEach { item ->
                 updateMediaSelective(
                     id = item.id,
                     name = item.name,
                     imageUrl = item.imageUrl,
                     synopsis = item.synopsis,
-                    releaseYear = item.releaseYear,
+                    firstAirDate = item.firstAirDate,
+                    lastAirDate = item.lastAirDate,
+                    airDate = item.airDate,
                     status = item.status,
                     duration = item.duration,
-                    order = item.order,
+                    number = item.number,
                     sources = item.sources,
                 )
             }
@@ -93,25 +107,32 @@ interface MediaDao {
     }
 
     @Transaction
-    suspend fun upsertMediaContent(
-        media: List<MediaEntity>,
+    suspend fun syncMediaContentWithCleanup(
+        containerId: String,
+        content: List<MediaEntity>,
         seasons: List<MediaSeasonEntity>
     ) {
 
+        val incomingSeasonIds = seasons.map { it.id }
+        deleteOrphanSeasons(containerId, incomingSeasonIds)
+
+        val incomingAssetIds = content.map { it.id }
+        deleteOrphanContent(containerId, incomingAssetIds)
+
         insertSeasons(seasons)
 
-        media.forEach { episode ->
-            val id = insertMediaIgnore(listOf(episode)).first()
-            if (id == -1L) {
+        content.forEach { episode ->
+            val rowId = insertMediaIgnore(listOf(episode)).first()
+            if (rowId == -1L) {
                 updateMediaSelective(
                     id = episode.id,
                     name = episode.name,
                     imageUrl = episode.imageUrl,
                     synopsis = episode.synopsis,
-                    releaseYear = episode.releaseYear,
+                    airDate = episode.airDate,
                     status = episode.status,
                     duration = episode.duration,
-                    order = episode.order,
+                    number = episode.number,
                     sources = episode.sources
                 )
             }
@@ -160,27 +181,44 @@ interface MediaDao {
     @Query("SELECT number FROM media_seasons WHERE id = :seasonId")
     suspend fun getSeasonNumber(seasonId: String): Int?
 
-    @Query("SELECT * FROM media WHERE ownerId = :ownerId AND seasonId IS NOT NULL ORDER BY `order` ASC")
+    @Query("SELECT * FROM media WHERE ownerId = :ownerId AND seasonId IS NOT NULL ORDER BY number ASC")
     fun getAssetsByOwnerId(ownerId: String): Flow<List<MediaEntity>>
 
-    @Query("SELECT * FROM media WHERE seasonId = :seasonId ORDER BY `order` ASC")
+    @Query("SELECT * FROM media WHERE seasonId = :seasonId ORDER BY number ASC")
     suspend fun getAssetsBySeasonSync(seasonId: String): List<MediaEntity>
 
-    @Query("SELECT * FROM media WHERE seasonId = :seasonId ORDER BY `order` ASC")
+    @Query("SELECT * FROM media WHERE seasonId = :seasonId ORDER BY number ASC")
     fun getAssetsBySeason(seasonId: String): Flow<List<MediaEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM media 
-        WHERE seasonId = :seasonId AND `order` = :order 
+        WHERE seasonId = :seasonId AND number = :order 
         LIMIT 1
-    """)
+    """
+    )
     suspend fun getAssetByOrder(seasonId: String, order: Int): MediaEntity?
+
+    @Transaction
+    suspend fun updateCarousels(entities: List<MediaCarouselEntity>, mediaType: String) {
+        deleteCarouselsByMediaType(mediaType)
+        insertCarousels(entities)
+    }
 
     @Query("UPDATE media SET isSaved = :isSaved WHERE id = :ownerId")
     suspend fun updateSaveStatus(ownerId: String, isSaved: Boolean)
 
     @Query("DELETE FROM media WHERE type = :type")
     suspend fun deleteMediaByType(type: String)
+
+    @Query("DELETE FROM media WHERE type = :mediaType AND id NOT IN (:remainingIds)")
+    suspend fun deleteOrphanMedia(mediaType: String, remainingIds: List<String>)
+
+    @Query("DELETE FROM media_seasons WHERE ownerId = :containerId AND id NOT IN (:incomingIds)")
+    suspend fun deleteOrphanSeasons(containerId: String, incomingIds: List<String>)
+
+    @Query("DELETE FROM media WHERE ownerId = :containerId AND id NOT IN (:incomingIds) AND id != :containerId")
+    suspend fun deleteOrphanContent(containerId: String, incomingIds: List<String>)
 
     @Query("DELETE FROM media_carousels WHERE type = :mediaType")
     suspend fun deleteCarouselsByMediaType(mediaType: String)

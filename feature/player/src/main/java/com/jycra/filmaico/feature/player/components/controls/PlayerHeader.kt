@@ -20,12 +20,13 @@ import androidx.compose.ui.unit.dp
 import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.ui.R
 import com.jycra.filmaico.domain.media.model.metadata.VideoMetadata
+import com.jycra.filmaico.domain.media.util.extesion.localizedName
 
 @Composable
 fun PlayerHeader(
     modifier: Modifier = Modifier,
     platform: Platform,
-    headerInfo: VideoMetadata,
+    metadata: VideoMetadata,
     onBackClick: () -> Unit
 ) {
 
@@ -49,20 +50,25 @@ fun PlayerHeader(
 
         Column {
 
-            /*Text(
-                text = headerInfo.title,
-                style = if (platform == Platform.MOBILE) {
-                    MaterialTheme.typography.titleMedium
-                } else {
-                    MaterialTheme.typography.titleLarge
-                },
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold
-            )*/
+            if (metadata.localizedName.isNotEmpty()) {
 
-            /*headerInfo.subtitle?.let { subtitle ->
                 Text(
-                    text = subtitle,
+                    text = metadata.localizedName,
+                    style = if (platform == Platform.MOBILE) {
+                        MaterialTheme.typography.titleMedium
+                    } else {
+                        MaterialTheme.typography.titleLarge
+                    },
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+
+            }
+
+            if (!metadata.isLive) {
+
+                Text(
+                    text = "Epísodio ${metadata.order}",
                     style = if (platform == Platform.MOBILE) {
                         MaterialTheme.typography.bodySmall
                     } else {
@@ -70,7 +76,8 @@ fun PlayerHeader(
                     },
                     color = Color.White.copy(alpha = 0.8f)
                 )
-            }*/
+
+            }
 
         }
 

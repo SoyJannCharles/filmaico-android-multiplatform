@@ -6,6 +6,7 @@ import com.jycra.filmaico.core.ui.feature.panel.model.UiPanel
 import com.jycra.filmaico.core.ui.feature.panel.model.UiSession
 import com.jycra.filmaico.domain.user.model.User
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 fun User.toUiPanel(): UiPanel {
@@ -14,9 +15,9 @@ fun User.toUiPanel(): UiPanel {
 
     return UiPanel(
         email = this.email ?: "Sin correo registrado",
-        subscriptionStatus = if (this.subscription.isActive()) "Activa" else "Expirada",
-        expirationDate = "Vence: ${dateFormatter.format(this.subscription.expirationDate)}",
-        maxDevices = "${this.subscription.maxDevices} dispositivos permitidos",
+        subscriptionStatus = if (this.subscription?.isActive() ?: false) "Activa" else "Expirada",
+        expirationDate = "Vence: ${dateFormatter.format(this.subscription?.expirationDate ?: Date())}",
+        maxDevices = "${this.subscription?.maxDevices} dispositivos permitidos",
         activeSessions = this.activeSessions.map { session ->
             UiSession(
                 id = session.sessionId,

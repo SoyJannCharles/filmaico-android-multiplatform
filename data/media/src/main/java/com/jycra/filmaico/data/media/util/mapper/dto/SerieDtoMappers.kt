@@ -22,8 +22,9 @@ fun SerieDto.toMappingResult(): MediaMappingResult {
             ownerId = null,
             name = this.name,
             synopsis = this.synopsis,
-            imageUrl = this.coverUrl,
-            releaseYear = this.releaseYear,
+            imageUrl = this.posterUrl,
+            firstAirDate = this.firstAirDate?.toDate()?.time,
+            lastAirDate = this.lastAirDate?.toDate()?.time,
             status = this.status
         )
     )

@@ -19,6 +19,7 @@ import com.jycra.filmaico.core.ui.feature.detail.internal.SurroundingBackgroundT
 import com.jycra.filmaico.core.ui.feature.detail.internal.SurroundingBackgroundTopEnd
 import com.jycra.filmaico.core.ui.theme.color.Gradient
 import com.jycra.filmaico.domain.media.model.Media
+import com.jycra.filmaico.domain.media.util.extesion.localizedImageUrl
 import com.jycra.filmaico.feature.movie.detail.component.MovieDetailContent
 
 @Composable
@@ -82,9 +83,9 @@ fun Screen(
 
         when (platform) {
             Platform.MOBILE ->
-                SurroundingBackgroundTopCenter(backgroundUrl = media.imageUrl)
+                SurroundingBackgroundTopCenter(backgroundUrl = media.localizedImageUrl)
             Platform.TV ->
-                SurroundingBackgroundTopEnd(backgroundUrl = media.imageUrl)
+                SurroundingBackgroundTopEnd(backgroundUrl = media.localizedImageUrl)
         }
 
         Column(

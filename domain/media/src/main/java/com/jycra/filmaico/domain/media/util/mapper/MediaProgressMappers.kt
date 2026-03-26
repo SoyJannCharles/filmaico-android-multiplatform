@@ -14,7 +14,7 @@ fun MediaProgress.toMediaAsset(): Media.Asset {
         ownerMediaType = MediaType.fromString(this.ownerMediaType),
         ownerId = this.ownerId,
         seasonId = this.seasonId,
-        order = this.order,
+        number = this.order,
         duration = this.duration,
         sources = emptyList(),
         lastPosition = this.lastPosition,

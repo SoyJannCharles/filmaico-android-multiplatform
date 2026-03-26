@@ -25,6 +25,7 @@ data class PlayerMetadata(
 
     fun toVideoMetadata() = VideoMetadata(
         name = name,
+        order = order,
         isLive = isLive,
         isSaved = isSaved
     )
@@ -42,7 +43,7 @@ data class PlayerMetadata(
             mediaType = this.mediaType.value,
             ownerMediaType = this.ownerMediaType.value,
             name = this.name,
-            imageUrl = thumbnailPath ?: this.imageUrl,
+            imageUrl = mapOf("default" to (thumbnailPath ?: this.imageUrl)),
             order = this.order,
             lastPosition = currentPos,
             duration = totalDuration / 1000,

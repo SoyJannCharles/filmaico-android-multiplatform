@@ -1,11 +1,11 @@
 package com.jycra.filmaico.core.ui.util
 
-fun formatDurationLabels(seconds: Long): String {
+fun formatDurationLabels(minutes: Long): String {
 
-    if (seconds <= 0) return "0 min"
+    if (minutes <= 0) return "0 min"
 
-    val hours = seconds / 3600
-    val minutes = (seconds % 3600) / 60
+    val hours = minutes / 60
+    val minutes = minutes % 60
 
     return when {
         hours > 0 -> {

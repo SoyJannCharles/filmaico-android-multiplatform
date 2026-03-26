@@ -3,8 +3,15 @@ package com.jycra.filmaico.core.ui.component.image
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.os.Build
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.asComposeRenderEffect
@@ -31,56 +38,80 @@ fun BlurredImage(
 ) {
 
     val context = LocalContext.current
+    var isError by remember(imageUrl) { mutableStateOf(false) }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    Box(modifier = modifier) {
 
-        val density = LocalDensity.current
+        if (isError) {
 
-        val blurEffect = remember(blurRadius) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            )
 
-            val blurRadiusPx = with(density) { blurRadius.toPx() }
+        } else {
 
-            RenderEffect.createBlurEffect(
-                blurRadiusPx,
-                blurRadiusPx,
-                Shader.TileMode.MIRROR
-            ).asComposeRenderEffect()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+
+                val density = LocalDensity.current
+
+                val blurEffect = remember(blurRadius) {
+
+                    val blurRadiusPx = with(density) { blurRadius.toPx() }
+
+                    RenderEffect.createBlurEffect(
+                        blurRadiusPx,
+                        blurRadiusPx,
+                        Shader.TileMode.MIRROR
+                    ).asComposeRenderEffect()
+
+                }
+
+                AsyncImage(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = zoom
+                            scaleY = zoom
+                            renderEffect = blurEffect
+                            clip = true
+                        },
+                    contentScale = ContentScale.Crop,
+                    model = imageUrl,
+                    contentDescription = contentDescription,
+                    onError = { isError = true }
+                )
+
+            } else {
+
+                val imageRequest = ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .transformations(
+                        LegacyBlurTransformation(
+                            context = context,
+                            radius = 18f,
+                            sampling = 6,
+                        )
+                    )
+                    .build()
+
+                AsyncImage(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = zoom
+                            scaleY = zoom
+                        },
+                    contentScale = ContentScale.Crop,
+                    model = imageRequest,
+                    contentDescription = contentDescription,
+                    onError = { isError = true }
+                )
+
+            }
 
         }
-
-        AsyncImage(
-            modifier = modifier
-                .graphicsLayer {
-                    scaleX = zoom
-                    scaleY = zoom
-                    renderEffect = blurEffect
-                    clip = true
-                },
-            contentScale = ContentScale.Crop,
-            model = imageUrl,
-            contentDescription = contentDescription
-        )
-
-    } else {
-
-        val imageRequest = ImageRequest.Builder(context)
-            .data(imageUrl)
-            .transformations(
-                LegacyBlurTransformation(
-                    context = context,
-                    radius = 16f,
-                    sampling = 6,
-                )
-        )
-        .build()
-
-        AsyncImage(
-            modifier = modifier
-                .scale(zoom),
-            contentScale = ContentScale.Crop,
-            model = imageRequest,
-            contentDescription = contentDescription
-        )
 
     }
 
