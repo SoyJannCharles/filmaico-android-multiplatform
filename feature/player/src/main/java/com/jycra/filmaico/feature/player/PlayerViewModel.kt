@@ -70,6 +70,9 @@ class PlayerViewModel @Inject constructor(
     private var currentSourceIndex = 0
     private var lastExecutionWasForced = false
 
+    private var networkRetryCount = 0
+    private val maxRetries = 3
+
     private var controlsHideJob: Job? = null
     private var progressPollerJob: Job? = null
 
@@ -109,6 +112,7 @@ class PlayerViewModel @Inject constructor(
             is PlayerUiEvent.OnPlayerReady -> onPlayerViewReady(event.playerView)
             is PlayerUiEvent.OnLifecyclePause -> pausePlayback()
             is PlayerUiEvent.OnLifecycleResume -> resumePlayback()
+            is PlayerUiEvent.OnRetryPlayback -> loadAsset(initialMediaId, initialMediaType)
             is PlayerUiEvent.OnBackClick -> handleBackNavigation()
         }
     }
@@ -136,6 +140,7 @@ class PlayerViewModel @Inject constructor(
 
     }
 
+    @OptIn(UnstableApi::class)
     private fun playCurrentSource(metadata: PlayerMetadata, forceRefresh: Boolean = false) {
 
         val sources = metadata.sources
@@ -163,12 +168,28 @@ class PlayerViewModel @Inject constructor(
             }.fold(
                 onSuccess = { playbackData ->
 
-                    val startPos = rawMetadata?.mediaType.let {
+                    val player = playerManager.exoPlayer
+
+                    val startPosition = rawMetadata?.mediaType.let {
                         if (it != MediaType.CHANNEL) {
                             if (metadata.isFinished) 0L else metadata.lastPosition
                         } else null
                     }
-                    playerManager.prepareAndPlay(playbackData, startPos)
+
+                    player.stop()
+                    player.clearMediaItems()
+
+                    val mediaSource = playerManager.createMediaSource(playbackData)
+
+                    player.setMediaSource(mediaSource)
+                    player.prepare()
+
+                    if (startPosition != null)
+                        player.seekTo(startPosition)
+                    else
+                        player.seekToDefaultPosition()
+
+                    player.play()
 
                 },
                 onFailure = {
@@ -200,6 +221,7 @@ class PlayerViewModel @Inject constructor(
                 PlayerUiState.Error("No se pudo reproducir ninguna de las fuentes disponibles.")
             }
         }
+
     }
 
     private fun startProgressPoller() {
@@ -488,7 +510,9 @@ class PlayerViewModel @Inject constructor(
 
     // --- Ciclo de Vida y Navegación ---
     private fun onPlayerViewReady(playerView: TextureView) {
+
         this.playerView = playerView
+
         if (isPlaybackReady) {
             updateControlsState { it.copy(isVisible = true) }
         }
@@ -602,35 +626,108 @@ class PlayerViewModel @Inject constructor(
 
     private fun handlePlaybackError(error: PlaybackException) {
 
+        val player = playerManager.exoPlayer
         val errorCode = error.errorCode
 
         when (errorCode) {
-            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> {
-                _uiState.update { PlayerUiState.Error("Error de conexión") }
+
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
+            PlaybackException.ERROR_CODE_IO_UNSPECIFIED -> {
+
+                if (networkRetryCount < maxRetries) {
+
+                    networkRetryCount++
+                    _uiState.update { PlayerUiState.Loading("Inestabilidad de red. Reintentando ($networkRetryCount/$maxRetries)...") }
+
+                    player.prepare()
+                    player.play()
+
+                } else {
+                    _uiState.update { PlayerUiState.Error("Fallo de conexión. Verifica tu internet y vuelve a intentar.") }
+                }
+
             }
-            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS, PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND -> {
 
-                val currentPos = playerManager.exoPlayer.currentPosition
-                val duration = playerManager.exoPlayer.duration
+            PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE -> {
 
+                if (networkRetryCount < maxRetries) {
+
+                    networkRetryCount++
+
+                    _uiState.update { PlayerUiState.Loading("Sincronizando transmisión...") }
+
+                    player.seekToDefaultPosition()
+                    player.prepare()
+                    player.play()
+
+                } else {
+                    _uiState.update { PlayerUiState.Error("La transmisión se interrumpió.") }
+                }
+
+            }
+
+            PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW -> {
+                player.seekToDefaultPosition()
+                player.prepare()
+                player.play()
+            }
+
+            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
+            PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
+            PlaybackException.ERROR_CODE_IO_CLEARTEXT_NOT_PERMITTED -> {
+
+                networkRetryCount = 0
+
+                val currentPos = player.currentPosition
+                val duration = player.duration
                 saveProgress(currentPos, duration)
 
                 _uiState.update { currentState ->
                     if (currentState is PlayerUiState.Success) {
-                        PlayerUiState.Loading("Error en la fuente actual. Reintentando...")
+                        PlayerUiState.Loading("Fuente caída. Buscando alternativa...")
                     } else currentState
                 }
 
                 rawMetadata?.let { metadata ->
                     playNextSource(metadata)
                 } ?: run {
-                    _uiState.update { PlayerUiState.Error("Fallo crítico en la reproducción.") }
+                    _uiState.update { PlayerUiState.Error("Fallo crítico: No hay más fuentes disponibles.") }
                 }
 
             }
-            else -> {
-                _uiState.update { PlayerUiState.Error("Error desconocido") }
+
+            PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+            PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED,
+            PlaybackException.ERROR_CODE_DECODING_FAILED -> {
+
+                val currentPos = player.currentPosition
+                val skipMillis = 2000L
+
+                if (networkRetryCount < maxRetries) {
+
+                    networkRetryCount++
+
+                    _uiState.update {
+                        PlayerUiState.Loading("Corrigiendo error de imagen... Reintentando ($networkRetryCount/$maxRetries)")
+                    }
+
+                    player.seekTo(currentPos + skipMillis)
+                    player.prepare()
+                    player.play()
+
+                } else {
+                    _uiState.update {
+                        PlayerUiState.Error("Tu dispositivo no puede procesar este segmento del video.")
+                    }
+                }
+
             }
+
+            else -> {
+                _uiState.update { PlayerUiState.Error("Error desconocido ($errorCode).") }
+            }
+
         }
 
     }

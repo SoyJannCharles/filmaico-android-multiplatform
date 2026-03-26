@@ -15,7 +15,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,11 +30,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.media3.exoplayer.ExoPlayer
 import com.jycra.filmaico.core.device.Platform
+import com.jycra.filmaico.core.ui.R
 import com.jycra.filmaico.core.ui.SystemUiController
 import com.jycra.filmaico.domain.stream.util.PlayerCallbacks
 import com.jycra.filmaico.feature.player.components.VideoPlayerView
@@ -65,7 +75,10 @@ fun PlayerScreen(
             )
         }
         is PlayerUiState.Error -> {
-            Text(text = uiState.message)
+            ErrorScreen(
+                message = uiState.message,
+                onRetryPlayback = { onEvent(PlayerUiEvent.OnRetryPlayback) }
+            )
         }
         is PlayerUiState.Closing -> {
 
@@ -145,7 +158,7 @@ private fun Screen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+            .background(Color.Black)
             .then(
                 if (platform == Platform.MOBILE) {
                     Modifier
@@ -210,6 +223,72 @@ private fun Screen(
             onQualityChange = { q -> onEvent(PlayerUiEvent.OnQualityChange(q)) },
             onDismiss = { onEvent(PlayerUiEvent.OnMenuDismiss) }
         )
+
+    }
+
+}
+
+@Composable
+private fun ErrorScreen(
+    message: String,
+    onRetryPlayback: () -> Unit
+) {
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+        contentAlignment = Alignment.Center
+    ) {
+
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Icon(
+                painter = painterResource(R.drawable.ic_error),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Ups! Hubo un problema",
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = message,
+                color = Color.Gray,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = onRetryPlayback,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .height(48.dp)
+                    .widthIn(min = 140.dp)
+            ) {
+                Text(
+                    text = "Reintentar",
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+        }
 
     }
 

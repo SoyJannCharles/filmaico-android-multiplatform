@@ -12,7 +12,7 @@ data class MediaProgressEntity(
     val mediaType: String,
     val ownerMediaType: String,
     val name: Map<String, String>,
-    val imageUrl: String,
+    val imageUrl: Map<String, String>,
     val order: Int,
     val lastPosition: Long,
     val duration: Long,

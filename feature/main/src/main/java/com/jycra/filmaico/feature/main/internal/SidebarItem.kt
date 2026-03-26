@@ -46,7 +46,7 @@ fun NavigationItemRow(
 ) {
 
     val contentColor = if (isSelected) MaterialTheme.colorScheme.onSurface
-    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f)
+    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.48f)
 
     var isFocused by remember { mutableStateOf(false) }
 
@@ -55,7 +55,7 @@ fun NavigationItemRow(
             .fillMaxWidth()
             .height(48.dp)
             .background(
-                color = if (isFocused) MaterialTheme.colorScheme.surfaceContainerLow.copy(0.64f) else Color.Transparent,
+                color = if (isFocused) MaterialTheme.colorScheme.surfaceContainerLow.copy(0.80f) else Color.Transparent,
                 shape = RoundedCornerShape(8.dp)
             )
             .padding(horizontal = 12.dp)

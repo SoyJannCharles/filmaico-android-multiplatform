@@ -3,6 +3,7 @@ package com.jycra.filmaico.core.ui.theme.color
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 
 object Gradient {
 
@@ -65,11 +66,11 @@ object Gradient {
     fun playerControlGradient(): Brush {
         return Brush.verticalGradient(
             colorStops = arrayOf(
-                0.0f to MaterialTheme.colorScheme.surfaceContainerLowest.copy(0.80f),
-                0.24f to MaterialTheme.colorScheme.surfaceContainerLowest.copy(0.32f),
-                0.5f to MaterialTheme.colorScheme.surfaceContainerLowest.copy(0f),
-                0.76f to MaterialTheme.colorScheme.surfaceContainerLowest.copy(0.32f),
-                1.0f to MaterialTheme.colorScheme.surfaceContainerLowest.copy(0.80f)
+                0.0f to Color.Black.copy(0.80f),
+                0.24f to Color.Black.copy(0.32f),
+                0.5f to Color.Black.copy(0f),
+                0.76f to Color.Black.copy(0.32f),
+                1.0f to Color.Black.copy(0.80f)
             )
         )
     }

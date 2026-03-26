@@ -43,6 +43,7 @@ sealed interface PlayerUiEvent {
     data class OnPlayerReady(val playerView: TextureView) : PlayerUiEvent
     data object OnLifecyclePause : PlayerUiEvent
     data object OnLifecycleResume : PlayerUiEvent
+    data object OnRetryPlayback : PlayerUiEvent
 
     // Controles de Reproducción
     data object OnPlayPauseToggle : PlayerUiEvent

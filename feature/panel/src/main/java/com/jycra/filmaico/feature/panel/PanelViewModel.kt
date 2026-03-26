@@ -8,7 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.jycra.filmaico.core.ui.feature.panel.util.toUiPanel
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
 import com.jycra.filmaico.domain.user.usecase.GetCurrentUserUseCase
+import com.jycra.filmaico.domain.user.usecase.LinkDeviceWithCodeUseCase
 import com.jycra.filmaico.domain.user.usecase.SignOutUseCase
+import com.jycra.filmaico.domain.user.util.AuthResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class PanelViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val linkDeviceWithCodeUseCase: LinkDeviceWithCodeUseCase,
     private val signOutUseCase: SignOutUseCase
 ) : ViewModel() {
 
@@ -64,6 +67,48 @@ class PanelViewModel @Inject constructor(
                     } else currentState
                 }
             }
+
+            is PanelUiEvent.OnLinkingCodeChange -> {
+                _uiState.update { currentState ->
+                    if (currentState is AccountUiState.Success) {
+                        currentState.copy(linkingCode = event.code)
+                    } else currentState
+                }
+            }
+
+            PanelUiEvent.LinkDeviceTriggered -> {
+                val currentState = _uiState.value
+                if (currentState is AccountUiState.Success && currentState.linkingCode.length == 6) {
+                    viewModelScope.launch {
+                        _uiState.update {
+                            (it as AccountUiState.Success).copy(
+                                isLinking = true,
+                                linkingError = null
+                            )
+                        }
+                        when (val result = linkDeviceWithCodeUseCase(currentState.linkingCode)) {
+                            is AuthResult.Success -> {
+                                _uiState.update {
+                                    (it as AccountUiState.Success).copy(
+                                        isLinking = false,
+                                        linkingCode = ""
+                                    )
+                                }
+                            }
+
+                            is AuthResult.Failure -> {
+                                _uiState.update {
+                                    (it as AccountUiState.Success).copy(
+                                        isLinking = false,
+                                        linkingError = result.failure
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             is PanelUiEvent.SignOut -> {
                 viewModelScope.launch {
                     signOutUseCase()

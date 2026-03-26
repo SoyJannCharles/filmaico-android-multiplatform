@@ -22,6 +22,7 @@ import com.jycra.filmaico.domain.media.model.metadata.PlaybackNavigation
 import com.jycra.filmaico.domain.media.repository.MediaRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -44,21 +45,36 @@ class MediaRepositoryImpl @Inject constructor(
 
             mediaService.getCarousels(mediaType).firstOrNull()?.let { dtos ->
                 val entities = dtos.map { it.toEntity(mediaType) }
-                mediaDao.deleteCarouselsByMediaType(mediaType.value)
-                mediaDao.insertCarousels(entities)
+                mediaDao.updateCarousels(entities = entities, mediaType = mediaType.value)
             }
 
             mediaService.getMediaContainers(mediaType).firstOrNull()?.let { snapshots ->
-                snapshots.forEach { doc ->
-                    val result = when (mediaType) {
+
+                val mappingResults = snapshots.mapNotNull { doc ->
+                    when (mediaType) {
                         MediaType.CHANNEL -> doc.toObject(ChannelDto::class.java)?.toMappingResult()
                         MediaType.MOVIE -> doc.toObject(MovieDto::class.java)?.toMappingResult()
                         MediaType.SERIE -> doc.toObject(SerieDto::class.java)?.toMappingResult()
                         MediaType.ANIME -> doc.toObject(AnimeDto::class.java)?.toMappingResult()
                         else -> null
                     }
-                    result?.let { mediaDao.upsertMetadata(it.media, it.tags) }
                 }
+
+                if (mappingResults.isNotEmpty()) {
+
+                    val allMedia = mappingResults.flatMap { it.media }
+                    val allTags = mappingResults.flatMap { it.tags }
+
+                    mediaDao.syncMediaWithCleanup(
+                        media = allMedia,
+                        tags = allTags,
+                        mediaType = mediaType.value
+                    )
+
+                } else {
+                    mediaDao.deleteOrphanMedia(mediaType.value, emptyList())
+                }
+
             }
 
         }
@@ -69,23 +85,46 @@ class MediaRepositoryImpl @Inject constructor(
 
         coroutineScope {
 
-            mediaService.getCarousels(mediaType).firstOrNull()?.let { dtos ->
-                val entities = dtos.map { it.toEntity(mediaType) }
-                mediaDao.deleteCarouselsByMediaType(mediaType.value)
-                mediaDao.insertCarousels(entities)
+            launch {
+
+                mediaService.getCarousels(mediaType).collect { dtos ->
+                    val entities = dtos.map { it.toEntity(mediaType) }
+                    mediaDao.updateCarousels(entities = entities, mediaType = mediaType.value)
+                }
+
             }
 
-            mediaService.getMediaContainers(mediaType).firstOrNull()?.let { snapshots ->
-                snapshots.forEach { doc ->
-                    val result = when (mediaType) {
-                        MediaType.CHANNEL -> doc.toObject(ChannelDto::class.java)?.toMappingResult()
-                        MediaType.MOVIE -> doc.toObject(MovieDto::class.java)?.toMappingResult()
-                        MediaType.SERIE -> doc.toObject(SerieDto::class.java)?.toMappingResult()
-                        MediaType.ANIME -> doc.toObject(AnimeDto::class.java)?.toMappingResult()
-                        else -> null
+            launch {
+
+                mediaService.getMediaContainers(mediaType).collect { snapshots ->
+
+                    val mappingResults = snapshots.mapNotNull { doc ->
+                        when (mediaType) {
+                            MediaType.CHANNEL -> doc.toObject(ChannelDto::class.java)?.toMappingResult()
+                            MediaType.MOVIE -> doc.toObject(MovieDto::class.java)?.toMappingResult()
+                            MediaType.SERIE -> doc.toObject(SerieDto::class.java)?.toMappingResult()
+                            MediaType.ANIME -> doc.toObject(AnimeDto::class.java)?.toMappingResult()
+                            else -> null
+                        }
                     }
-                    result?.let { mediaDao.upsertMetadata(it.media, it.tags) }
+
+                    if (mappingResults.isNotEmpty()) {
+
+                        val allMedia = mappingResults.flatMap { it.media }
+                        val allTags = mappingResults.flatMap { it.tags }
+
+                        mediaDao.syncMediaWithCleanup(
+                            media = allMedia,
+                            tags = allTags,
+                            mediaType = mediaType.value
+                        )
+
+                    } else {
+                        mediaDao.deleteOrphanMedia(mediaType.value, emptyList())
+                    }
+
                 }
+
             }
 
         }
@@ -94,46 +133,51 @@ class MediaRepositoryImpl @Inject constructor(
 
     override suspend fun syncMediaContent(containerId: String, mediaType: MediaType) {
 
-        val seasons = mediaService.getMediaSeasons(containerId, mediaType)
+        coroutineScope {
 
-        val allMediaEntities = mutableListOf<MediaEntity>()
-        val seasonEntities = mutableListOf<MediaSeasonEntity>()
+            val seasons = mediaService.getMediaSeasons(containerId, mediaType)
 
-        seasons.forEach { seasonDto ->
-
-            val seasonId = seasonDto.id ?: return@forEach
-
-            seasonEntities.add(
+            val seasonEntities = seasons.mapNotNull { dto ->
+                val id = dto.id ?: return@mapNotNull null
                 MediaSeasonEntity(
-                    id = seasonId,
+                    id = id,
                     ownerId = containerId,
-                    number = seasonDto.seasonNumber,
-                    name = seasonDto.name
-                )
-            )
-
-            val assets = mediaService.getMediaAssets(containerId, seasonId, mediaType)
-
-            assets.forEach { contentDto ->
-                allMediaEntities.add(
-                    MediaEntity(
-                        id = contentDto.id ?: "",
-                        type = MediaType.fromString(contentDto.type).value,
-                        ownerType = mediaType.value,
-                        seasonId = seasonId,
-                        ownerId = containerId,
-                        name = contentDto.name,
-                        imageUrl = contentDto.thumbnailUrl,
-                        duration = contentDto.duration,
-                        order = if (contentDto.order != 0) contentDto.order else contentDto.contentNumber,
-                        sources = contentDto.sources
-                    )
+                    number = dto.number,
+                    name = dto.name
                 )
             }
 
-        }
+            val deferredAssets = seasons.map { seasonDto ->
+                async {
+                    val seasonId = seasonDto.id ?: return@async emptyList<MediaEntity>()
+                    mediaService.getMediaAssets(containerId, seasonId, mediaType).map { contentDto ->
+                        MediaEntity(
+                            id = contentDto.id ?: "",
+                            type = MediaType.fromString(contentDto.type).value,
+                            seasonId = seasonId,
+                            ownerId = containerId,
+                            ownerType = mediaType.value,
+                            name = contentDto.name,
+                            synopsis = contentDto.synopsis,
+                            imageUrl = mapOf("default" to contentDto.thumbnailUrl),
+                            airDate = contentDto.airDate?.toDate()?.time,
+                            duration = contentDto.duration,
+                            number = contentDto.number,
+                            sources = contentDto.sources
+                        )
+                    }
+                }
+            }
 
-        mediaDao.upsertMediaContent(allMediaEntities, seasonEntities)
+            val allMediaEntities = deferredAssets.awaitAll().flatten()
+
+            mediaDao.syncMediaContentWithCleanup(
+                containerId = containerId,
+                content = allMediaEntities,
+                seasons = seasonEntities
+            )
+
+        }
 
     }
 
@@ -234,12 +278,14 @@ class MediaRepositoryImpl @Inject constructor(
             Media.Container(
                 id = mediaEntity.id,
                 name = mediaEntity.name,
+                synopsis = mediaEntity.synopsis,
                 imageUrl = mediaEntity.imageUrl,
                 tags = emptyList(),
                 mediaType = mediaType,
                 ownerMediaType = MediaType.fromString(mediaEntity.ownerType),
-                synopsis = mediaEntity.synopsis,
-                releaseYear = mediaEntity.releaseYear,
+                firstAirDate = mediaEntity.firstAirDate,
+                lastAirDate = mediaEntity.lastAirDate,
+                airDate = mediaEntity.airDate,
                 status = mediaEntity.status?.let { ContentStatus.fromValue(it) }
                     ?: ContentStatus.UNKNOWN,
                 seasons = seasons

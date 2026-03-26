@@ -27,8 +27,10 @@ import com.jycra.filmaico.core.ui.component.FilmaicoLogoSidebar
 import com.jycra.filmaico.core.ui.feature.detail.internal.MediaCover
 import com.jycra.filmaico.core.ui.feature.detail.internal.Synopsis
 import com.jycra.filmaico.domain.media.model.Media
+import com.jycra.filmaico.domain.media.util.extesion.localizedImageUrl
 import com.jycra.filmaico.domain.media.util.extesion.localizedName
 import com.jycra.filmaico.domain.media.util.extesion.localizedSynopsis
+import java.util.Calendar
 
 @Composable
 fun MovieDetailContent(
@@ -76,7 +78,7 @@ fun MovieDetailContent(
         if (platform == Platform.MOBILE) {
 
             MediaCover(
-                coverUrl = media.imageUrl,
+                coverUrl = media.localizedImageUrl,
                 platform = platform,
                 contentDescription = media.localizedName
             )
@@ -101,10 +103,15 @@ fun MovieDetailContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            val releaseYear = media.airDate?.let { millis ->
+                val calendar = Calendar.getInstance().apply { timeInMillis = millis }
+                calendar.get(Calendar.YEAR).toString()
+            } ?: ""
+
             Text(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                text = "${media.releaseYear}"
+                text = releaseYear
             )
 
             if (platform == Platform.TV) {
@@ -125,7 +132,7 @@ fun MovieDetailContent(
                 modifier = Modifier
                     .padding(end = 128.dp),
                 platform = platform,
-                coverUrl = media.imageUrl,
+                coverUrl = media.localizedImageUrl,
                 contentDescription = media.localizedName
             )
         }

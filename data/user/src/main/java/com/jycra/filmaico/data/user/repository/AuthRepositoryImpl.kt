@@ -1,9 +1,12 @@
 package com.jycra.filmaico.data.user.repository
 
 import android.os.Build
+import android.util.Log
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
+import com.jycra.filmaico.core.model.user.AuthTokenDto
 import com.jycra.filmaico.core.model.user.SessionDto
 import com.jycra.filmaico.core.model.user.UserDto
 import com.jycra.filmaico.data.user.data.DeviceIdProvider
@@ -12,10 +15,12 @@ import com.jycra.filmaico.data.user.data.source.UserSource
 import com.jycra.filmaico.data.user.data.store.SessionStore
 import com.jycra.filmaico.data.user.mapper.toDomain
 import com.jycra.filmaico.domain.user.error.AuthError
+import com.jycra.filmaico.domain.user.model.AuthToken
 import com.jycra.filmaico.domain.user.model.User
 import com.jycra.filmaico.domain.user.repository.AuthRepository
 import com.jycra.filmaico.domain.user.util.AuthResult
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -47,7 +52,7 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun authenticate(email: String, password: String): AuthResult<Unit, AuthError> {
+    override suspend fun authenticateWithEmail(email: String, password: String): AuthResult<Unit, AuthError> {
         return when (val authResult = authSource.signInWithEmail(email, password)) {
             is AuthResult.Success -> {
                 AuthResult.Success(Unit)
@@ -58,33 +63,85 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun authenticateWithToken(code: String, token: String): AuthResult<Unit, AuthError> {
+
+        val loginResult = authSource.signInWithToken(token)
+
+        return when (loginResult) {
+            is AuthResult.Success -> {
+                return userSource.deleteAuthSession(code)
+            }
+            is AuthResult.Failure -> {
+                loginResult
+            }
+        }
+
+    }
+
+    override fun observeAuthSessionStatus(code: String): Flow<AuthToken> {
+
+        val sessionRef = userSource.getAuthSessionReference(code)
+
+        val token = sessionRef.snapshots().map { documentSnapshot ->
+            documentSnapshot.toObject<AuthTokenDto>() ?: AuthTokenDto(status = "error")
+        }.distinctUntilChanged()
+
+        return token.map { it.toDomain() }
+
+    }
+
+    override suspend fun createAuthSession(): AuthResult<String, AuthError> {
+
+        val allowedChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        val code = (1..6)
+            .map { allowedChars.random() }
+            .joinToString("")
+
+        return userSource.createAuthSession(code)
+
+    }
+
+    override suspend fun linkDeviceWithCode(code: String): AuthResult<Unit, AuthError> {
+
+        val uid = authSource.getCurrentUser()?.uid
+            ?: return AuthResult.Failure(AuthError.UserNotFound)
+
+        return userSource.authorizeSessionWithUid(code, uid)
+
+    }
+
     override suspend fun signOut() {
 
         val uid = authSource.getCurrentUser()?.uid
         val sessionId = sessionStore.getSessionId()
 
         if (uid != null && sessionId != null) {
-            val user = userSource.getUser(uid)
-            if (user != null) {
-                userSource.updateUser(
-                    uid = uid,
-                    user = user.copy(
-                        activeSessions = user.activeSessions.filterNot {
-                            it.sessionId == sessionId
-                        }
+            try {
+                val user = userSource.getUser(uid)
+                if (user != null) {
+                    userSource.updateUser(
+                        uid = uid,
+                        user = user.copy(
+                            activeSessions = user.activeSessions.filterNot {
+                                it.sessionId == sessionId
+                            }
+                        )
                     )
-                )
+                }
+            } catch (e: Exception) {
+
             }
         }
 
-        authSource.signOut()
         sessionStore.clearSessionId()
+
+        authSource.signOut()
 
     }
 
     override suspend fun signOutLocal() {
-        authSource.signOut()
         sessionStore.clearSessionId()
+        authSource.signOut()
     }
 
     override suspend fun getCurrentUser(): User? {
@@ -116,7 +173,11 @@ class AuthRepositoryImpl @Inject constructor(
 
             isSubscriptionActive && isDeviceAuthorized
 
-        }.distinctUntilChanged()
+        }
+            .distinctUntilChanged()
+            .catch { e ->
+                emit(false)
+            }
 
     }
 
@@ -133,7 +194,11 @@ class AuthRepositoryImpl @Inject constructor(
 
             isActive
 
-        }.distinctUntilChanged()
+        }
+            .distinctUntilChanged()
+            .catch { e ->
+                emit(false)
+            }
 
     }
 
@@ -148,7 +213,7 @@ class AuthRepositoryImpl @Inject constructor(
         val result = userSource.updateSessionsAtomically(uid) { userDto ->
 
             val currentSessions = userDto.activeSessions.toMutableList()
-            val maxDevices = userDto.subscription.maxDevices
+            val maxDevices = userDto.subscription?.maxDevices ?: 1
 
             val existingSession = currentSessions.find { it.deviceId == currentDeviceId }
 

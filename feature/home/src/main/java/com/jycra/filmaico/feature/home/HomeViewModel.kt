@@ -36,7 +36,7 @@ class HomeViewModel @Inject constructor(
 
             if (user != null) {
 
-                val expirationDate = user.subscription.expirationDate
+                val expirationDate = user.subscription?.expirationDate ?: Date()
                 val currentDate = Date()
 
                 val diffInMillis = expirationDate.time - currentDate.time

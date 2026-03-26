@@ -16,6 +16,8 @@ import com.jycra.filmaico.core.ui.feature.media.model.UiMediaSeason
 import com.jycra.filmaico.core.ui.feature.media.MediaCarousel
 import com.jycra.filmaico.core.ui.feature.media.model.UiMediaCarousel
 import com.jycra.filmaico.core.ui.feature.media.model.UiMediaDetail
+import com.jycra.filmaico.core.ui.feature.media.util.orientation.CarouselOrientation
+import com.jycra.filmaico.core.ui.feature.media.util.variant.SpecialCarouselType
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusCallbacks
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
 
@@ -114,8 +116,8 @@ private fun Screen(
 
         val episodesCarousel = remember(detail.selectedSeasonContents) {
             UiMediaCarousel(
-                id = "episodes",
-                title = "Episodes",
+                id = SpecialCarouselType.COLLECTION.value,
+                hasTitle = false,
                 items = detail.selectedSeasonContents
             )
         }
@@ -123,6 +125,7 @@ private fun Screen(
         MediaCarousel(
             platform = platform,
             contentPadding = innerPadding,
+            orientation = if (platform == Platform.MOBILE) CarouselOrientation.VERTICAL else CarouselOrientation.HORIZONTAL,
             carousel = episodesCarousel,
             carouselIndex = 0,
             mediaFocusState = mediaFocusState,

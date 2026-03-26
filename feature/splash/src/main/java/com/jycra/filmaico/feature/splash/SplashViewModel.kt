@@ -67,7 +67,7 @@ class SplashViewModel @Inject constructor(
 
         val effect = when {
             user == null -> SplashUiEffect.NavigateToAuth
-            user.subscription.isActive() -> SplashUiEffect.NavigateToMain
+            user.subscription?.isActive() ?: false -> SplashUiEffect.NavigateToMain
             else -> SplashUiEffect.NavigateToSubscription
         }
 

@@ -61,6 +61,7 @@ fun AppTvNavHost(
         )
 
         signInRoute(
+            platform = Platform.TV,
             onNavigateToSignUp = {
                 navController.navigateToSignUp()
             },

@@ -2,6 +2,7 @@ package com.jycra.filmaico.data.media.data.service
 
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.jycra.filmaico.core.model.media.MediaCarouselDto
 import com.jycra.filmaico.core.model.media.MediaDto
 import com.jycra.filmaico.core.model.media.MediaSeasonDto
@@ -24,7 +25,11 @@ class MediaService @Inject constructor(
             .addSnapshotListener { snapshot, error ->
 
                 if (error != null) {
-                    close(error)
+                    if (error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                        close()
+                    } else {
+                        close(error)
+                    }
                     return@addSnapshotListener
                 }
 
@@ -48,7 +53,11 @@ class MediaService @Inject constructor(
             .addSnapshotListener { snapshot, error ->
 
                 if (error != null) {
-                    close(error)
+                    if (error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                        close()
+                    } else {
+                        close(error)
+                    }
                     return@addSnapshotListener
                 }
 

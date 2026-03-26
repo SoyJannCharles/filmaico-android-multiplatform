@@ -7,7 +7,8 @@ sealed interface Media {
 
     val id: String
     val name: Map<String, String>
-    val imageUrl: String
+    val synopsis: Map<String, String>?
+    val imageUrl: Map<String, String>
     val tags: List<String>
     val mediaType: MediaType
     val ownerMediaType: MediaType
@@ -16,13 +17,15 @@ sealed interface Media {
     data class Container(
         override val id: String,
         override val name: Map<String, String>,
-        override val imageUrl: String,
+        override val synopsis: Map<String, String>,
+        override val imageUrl: Map<String, String>,
         override val tags: List<String>,
         override val mediaType: MediaType,
         override val ownerMediaType: MediaType,
         override val isSaved: Boolean = false,
-        val synopsis: Map<String, String>,
-        val releaseYear: Int?,
+        val firstAirDate: Long?,
+        val lastAirDate: Long?,
+        val airDate: Long?,
         val status: ContentStatus = ContentStatus.UNKNOWN,
         val seasons: List<MediaSeason> = emptyList()
     ) : Media
@@ -30,15 +33,17 @@ sealed interface Media {
     data class Asset(
         override val id: String,
         override val name: Map<String, String>,
-        override val imageUrl: String,
+        override val synopsis: Map<String, String>? = null,
+        override val imageUrl: Map<String, String>,
         override val tags: List<String>,
         override val mediaType: MediaType,
         override val ownerMediaType: MediaType,
         override val isSaved: Boolean = false,
         val ownerId: String?,
         val seasonId: String?,
+        val airDate: Long? = null,
         val duration: Long?,
-        val order: Int?,
+        val number: Int?,
         val sources: List<Stream>,
         val isLive: Boolean = false,
         val lastPosition: Long = 0,

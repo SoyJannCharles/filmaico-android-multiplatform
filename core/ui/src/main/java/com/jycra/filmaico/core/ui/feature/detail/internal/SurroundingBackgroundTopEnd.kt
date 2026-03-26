@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.jycra.filmaico.core.ui.component.image.BlurredImage
@@ -15,11 +17,14 @@ fun SurroundingBackgroundTopEnd(
     backgroundUrl: String
 ) {
 
-    BlurredImage(
-        imageUrl = backgroundUrl,
+    Box(
         modifier = Modifier
             .fillMaxSize(0.72f)
-    )
+            .clipToBounds(),
+        contentAlignment = Alignment.Center
+    ) {
+        BlurredImage(imageUrl = backgroundUrl)
+    }
 
     Box(
         modifier = Modifier

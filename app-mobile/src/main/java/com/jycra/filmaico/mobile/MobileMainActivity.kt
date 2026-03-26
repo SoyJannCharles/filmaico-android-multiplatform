@@ -47,15 +47,17 @@ class MobileMainActivity : ComponentActivity() {
             val navController = rememberNavController()
 
             LaunchedEffect(globalState.sessionStatus) {
+
+                val currentRoute = navController.currentBackStackEntry?.destination?.route
+
                 when (globalState.sessionStatus) {
                     SessionObserver.SessionStatus.Invalid -> {
-
-                        mainViewModel.signOut()
-
-                        navController.navigate(AppRoutes.SPLASH) {
-                            popUpTo(0) { inclusive = true }
+                        if (currentRoute != AppRoutes.SPLASH && currentRoute != AppRoutes.SIGN_IN) {
+                            mainViewModel.signOut()
+                            navController.navigate(AppRoutes.SPLASH) {
+                                popUpTo(0) { inclusive = true }
+                            }
                         }
-
                     }
                     SessionObserver.SessionStatus.Loading -> {
 
@@ -64,6 +66,7 @@ class MobileMainActivity : ComponentActivity() {
 
                     }
                 }
+
             }
 
             FilmaicoTheme(

@@ -1,8 +1,10 @@
 package com.jycra.filmaico.core.model.stream
 
 import androidx.annotation.Keep
+import com.google.firebase.firestore.IgnoreExtraProperties
 
 @Keep
+@IgnoreExtraProperties
 data class StreamDto(
     val type: String? = null,
     val uri: String? = null,

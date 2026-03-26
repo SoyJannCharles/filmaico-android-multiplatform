@@ -30,12 +30,12 @@ object PlayerModule {
     fun provideExoPlayer(
         @ApplicationContext context: Context
     ): ExoPlayer {
-        // Volvemos a un ExoPlayer simple. Lo configuraremos dinámicamente.
         return ExoPlayer
             .Builder(
                 context,
                 DefaultRenderersFactory(context)
                     .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+                    .setEnableDecoderFallback(true)
             )
             .setTrackSelector(
                 DefaultTrackSelector(
@@ -45,7 +45,8 @@ object PlayerModule {
             )
             .setLoadControl(
                 DefaultLoadControl.Builder()
-                    .setBufferDurationsMs(15_000, 50_000, 2_000, 5_000)
+                    .setBufferDurationsMs(30_000, 50_000, 1_000, 2_000)
+                    .setBackBuffer(10_000, true)
                     .build()
             )
             .setBandwidthMeter(

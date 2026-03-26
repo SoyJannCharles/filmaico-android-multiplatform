@@ -17,6 +17,6 @@ data class UiMedia(
 ) {
 
     val durationInMs: Long
-        get() = duration * 1000L
+        get() = duration * 60L * 1000L
 
 }

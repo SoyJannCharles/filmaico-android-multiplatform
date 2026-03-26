@@ -52,6 +52,18 @@ class AuthSource @Inject constructor(
         }
     }
 
+    suspend fun signInWithToken(
+        token: String
+    ): AuthResult<FirebaseUser, AuthError> = withContext(ioDispatcher) {
+        try {
+            val user = auth.signInWithCustomToken(token).await().user
+            user?.let { AuthResult.Success(it) }
+                ?: AuthResult.Failure(AuthError.NullUserAfterAuthSuccess)
+        } catch (e: Exception) {
+            AuthResult.Failure(mapFirebaseAuthException(e))
+        }
+    }
+
     fun signOut() = auth.signOut()
 
     suspend fun deleteUser(user: FirebaseUser): AuthResult<Unit, AuthError> = withContext(ioDispatcher) {

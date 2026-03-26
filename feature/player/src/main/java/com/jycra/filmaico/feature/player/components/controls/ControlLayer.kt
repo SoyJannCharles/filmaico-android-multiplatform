@@ -93,7 +93,7 @@ fun ControlLayer(
             modifier = Modifier
                 .align(Alignment.TopStart),
             platform = platform,
-            headerInfo = videoMetadata,
+            metadata = videoMetadata,
             onBackClick = callbacks.onBackClick
         )
 

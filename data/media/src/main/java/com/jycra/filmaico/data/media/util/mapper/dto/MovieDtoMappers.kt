@@ -18,8 +18,8 @@ fun MovieDto.toMappingResult(): MediaMappingResult {
         ownerId = null,
         name = this.name,
         synopsis = this.synopsis,
-        imageUrl = this.coverUrl,
-        releaseYear = this.releaseYear,
+        imageUrl = this.posterUrl,
+        airDate = this.airDate?.toDate()?.time,
         duration = this.duration,
         sources = this.sources
     )

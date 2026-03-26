@@ -1,9 +1,11 @@
 package com.jycra.filmaico.core.model.stream
 
 import androidx.annotation.Keep
+import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.gson.annotations.SerializedName
 
 @Keep
+@IgnoreExtraProperties
 data class KeyDto(
     @SerializedName("kty")
     val kty: String = "oct",
@@ -20,6 +22,7 @@ data class KeyDto(
 }
 
 @Keep
+@IgnoreExtraProperties
 data class KeysDto(
     @SerializedName("keys")
     val keys: List<KeyDto>

@@ -63,7 +63,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
 
             val user = getCurrentUserUseCase() ?: return@launch
-            val expiry = user.subscription.expirationDate.time
+            val expiry = user.subscription?.expirationDate?.time ?: System.currentTimeMillis()
 
             while (isActive) {
 
