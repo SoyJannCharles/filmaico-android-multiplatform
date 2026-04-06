@@ -24,6 +24,7 @@ fun MovieRoute(
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val extractionState by viewModel.extractionState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         awaitFrame()
@@ -45,6 +46,7 @@ fun MovieRoute(
 
     MovieScreen(
         uiState = uiState,
+        extractionState = extractionState,
         platform = platform,
         contentPadding = contentPadding,
         mediaFocusState = viewModel.mediaFocusState,
@@ -57,6 +59,9 @@ fun MovieRoute(
             },
             onBeaconReceived = {
                 viewModel.onScreenResumed()
+            },
+            onPreloadRequested = { carouselIndex, contentIndex ->
+                viewModel.preloadAsset(carouselIndex, contentIndex)
             }
         ),
         contentFocusBeacon = contentFocusBeacon,

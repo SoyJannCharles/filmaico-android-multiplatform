@@ -4,15 +4,17 @@ import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.model.metadata.PlaybackData
 import com.jycra.filmaico.domain.media.model.stream.DrmKeys
 import com.jycra.filmaico.domain.media.model.stream.Stream
-import com.jycra.filmaico.domain.stream.repository.AttrStreamRepository
-import com.jycra.filmaico.domain.stream.repository.StreamProcessingRepository
+import com.jycra.filmaico.domain.stream.repository.PlaybackDataRepository
+import com.jycra.filmaico.domain.stream.util.StreamExtractionState
+import kotlinx.coroutines.ensureActive
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.coroutines.coroutineContext
 
 class PrepareStreamUseCase @Inject constructor(
-    private val streamRepository: StreamProcessingRepository,
-    private val attrStreamRepository: AttrStreamRepository,
-    private val getStreamUrlUseCase: GetStreamUrlUsecase,
-    private val getDrmKeyUseCase: GetDrmKeyUseCase,
+    private val repository: PlaybackDataRepository,
+    private val getStreamUrlUseCase: GetStreamUrlUseCase,
+    private val getDrmKeyUseCase: GetDrmKeyUseCase
 ) {
 
     suspend operator fun invoke(
@@ -20,40 +22,51 @@ class PrepareStreamUseCase @Inject constructor(
         mediaType: MediaType,
         source: Stream,
         forceRefresh: Boolean = false,
-        onStatusUpdate: (String) -> Unit = {}
+        onStateChange: (StreamExtractionState) -> Unit = {}
     ): Result<PlaybackData> {
+
         return try {
+
+            coroutineContext.ensureActive()
+
             when (source) {
                 is Stream.Direct -> {
-                    processDirectStream(assetId, source, forceRefresh, onStatusUpdate)
+                    processDirectStream(assetId, source, forceRefresh, onStateChange)
                 }
                 is Stream.WebViewScrap -> {
-                    processWebViewScrapStream(assetId, mediaType, source, forceRefresh, onStatusUpdate)
-                }
-                is Stream.RegexScrap -> {
-                    processRegexScrapStream(assetId, mediaType.value, source, forceRefresh, onStatusUpdate)
+                    processWebViewScrapStream(assetId, mediaType, source, forceRefresh, onStateChange)
                 }
             }
+
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            onStateChange(StreamExtractionState.Error(e.message ?: "Error desconocido", e))
             Result.failure(e)
         }
+
     }
 
     private suspend fun processDirectStream(
         assetId: String,
         source: Stream.Direct,
         forceRefresh: Boolean,
-        onStatusUpdate: (String) -> Unit
+        onStateChange: (StreamExtractionState) -> Unit
     ): Result<PlaybackData> {
 
-        onStatusUpdate("Estableciendo conexión segura...")
+        coroutineContext.ensureActive()
+
+        onStateChange(StreamExtractionState.ResolvingCDN)
 
         val uri = try {
-            attrStreamRepository.getProcessedUri(source.uri, forceRefresh)
+            repository.getAuthenticatedUri(source.uri, forceRefresh)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             return Result.failure(Exception("Fallo al resolver CDN/Tokens: ${e.message}", e))
         }
 
+        coroutineContext.ensureActive()
         val headers = mutableMapOf<String, String>()
         source.headers?.let {
             headers.putAll(it)
@@ -61,9 +74,19 @@ class PrepareStreamUseCase @Inject constructor(
 
         source.cookieUrl?.let { url ->
 
-            onStatusUpdate("Autenticando sesión de video...")
+            coroutineContext.ensureActive()
 
-            val cookie = attrStreamRepository.getCookies(url, forceRefresh)
+            onStateChange(StreamExtractionState.FetchingCookies)
+
+            val cookie = try {
+                repository.getCookies(url, forceRefresh)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+
+            coroutineContext.ensureActive()
             if (cookie != null) {
                 headers["Cookie"] = cookie
             } else {
@@ -75,7 +98,9 @@ class PrepareStreamUseCase @Inject constructor(
         var keys: DrmKeys? = null
         source.drmInfo?.let { drmInfo ->
 
-            onStatusUpdate("Descifrando contenido...")
+            coroutineContext.ensureActive()
+
+            onStateChange(StreamExtractionState.DecryptingDRM)
 
             try {
 
@@ -83,19 +108,23 @@ class PrepareStreamUseCase @Inject constructor(
                     contentId = assetId,
                     drmInfo = drmInfo,
                     forceRefresh = forceRefresh,
-                    onStatusUpdate = onStatusUpdate
+                    onStateChange = onStateChange
                 )
 
                 if (keys == null && drmInfo.isValid()) {
                     throw Exception("Fallo crítico: No se obtuvieron llaves de desencriptación.")
                 }
 
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 return Result.failure(Exception("Error de Licencias DRM: ${e.message}", e))
             }
 
         }
 
+        coroutineContext.ensureActive()
+        onStateChange(StreamExtractionState.Success(uri))
         return Result.success(
             PlaybackData(
                 uri = uri,
@@ -111,46 +140,43 @@ class PrepareStreamUseCase @Inject constructor(
         mediaType: MediaType,
         source: Stream.WebViewScrap,
         forceRefresh: Boolean,
-        onStatusUpdate: (String) -> Unit
+        onStateChange: (StreamExtractionState) -> Unit
     ): Result<PlaybackData> {
+
+        coroutineContext.ensureActive()
 
         val streamUrl = getStreamUrlUseCase(
             assetId = assetId,
             mediaType = mediaType,
             iframeUrl = source.iframeUrl,
             forceRefresh = forceRefresh,
-            onStatusUpdate = onStatusUpdate
+            onStateChange = onStateChange
         )
 
+        coroutineContext.ensureActive()
+
+        val urlWithoutParams = streamUrl.substringBefore('?').lowercase()
+
+        if (urlWithoutParams.endsWith(".m3u8") || urlWithoutParams.endsWith(".mpd")) {
+
+            coroutineContext.ensureActive()
+
+            try {
+                onStateChange(StreamExtractionState.PreloadingManifest)
+                repository.preloadHlsManifest(streamUrl)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+
+            }
+
+        }
+
+        coroutineContext.ensureActive()
+
+        onStateChange(StreamExtractionState.Success(streamUrl))
         return Result.success(PlaybackData(uri = streamUrl))
 
-    }
-
-    private suspend fun processRegexScrapStream(
-        contentId: String,
-        contentType: String,
-        source: Stream.RegexScrap,
-        forceRefresh: Boolean,
-        onReportStatus: (String) -> Unit
-    ): Result<PlaybackData> {
-        // 1. Extraemos la URL del stream
-        val extractedUri = streamRepository.extractRegexUrl(
-            source.htmlUrl,
-            source.regexPattern ?: return Result.failure(Exception("Falta el patrón Regex para el scrapeo")),
-            source.headers
-        ) ?: return Result.failure(Exception("No se pudo extraer la URL del stream desde el HTML."))
-
-        // 2. Una vez que tenemos la URL, la tratamos como un stream 'Direct'.
-        // Creamos un objeto 'Direct' temporal para reutilizar nuestra lógica existente.
-        val tempDirectSource = Stream.Direct(
-            uri = extractedUri,
-            drmInfo = source.drmInfo,
-            headers = source.headers,
-            cookieUrl = source.cookieUrl
-        )
-
-        // 3. Reutilizamos la función que ya procesa streams directos.
-        return processDirectStream(contentId, tempDirectSource, forceRefresh, onReportStatus)
     }
 
 }

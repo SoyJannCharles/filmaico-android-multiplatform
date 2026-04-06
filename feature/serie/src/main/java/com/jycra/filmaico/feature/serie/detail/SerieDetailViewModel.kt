@@ -10,13 +10,16 @@ import com.jycra.filmaico.core.ui.feature.media.util.mapper.toUiDetail
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
 import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.usecase.GetMediaContainerUseCase
+import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
 import com.jycra.filmaico.domain.media.usecase.SyncMediaContentUseCase
+import com.jycra.filmaico.shared.managers.StreamPreloadManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -24,8 +27,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SerieDetailViewModel @Inject constructor(
+    private val streamPreloadManager: StreamPreloadManager,
     private val syncMediaContentUseCase: SyncMediaContentUseCase,
     private val getMediaContainerUseCase: GetMediaContainerUseCase,
+    private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -79,11 +84,44 @@ class SerieDetailViewModel @Inject constructor(
             detail = container.toUiDetail(selectedSeasonId = seasonId ?: container.seasons.firstOrNull()?.id)
         )
 
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = SerieDetailUiState.Loading
-    )
+    }
+        .onEach { state ->
+            if (state is SerieDetailUiState.Success) {
+
+                if (!mediaFocusState.shouldRestoreFocus && mediaFocusState.lastFocusedContentIndex == 0) {
+
+                    val firstEpisode = state.detail.selectedSeasonContents.firstOrNull()
+
+                    if (firstEpisode != null) {
+
+                        val metadata = getPlayerMetadataUseCase(
+                            assetId = firstEpisode.id,
+                            mediaType = firstEpisode.mediaType
+                        )
+
+                        if (metadata != null && metadata.sources.isNotEmpty()) {
+
+                            val bestSource = metadata.sources.first()
+
+                            streamPreloadManager.startPreload(
+                                assetId = metadata.assetId,
+                                mediaType = metadata.mediaType,
+                                source = bestSource
+                            )
+
+                        }
+
+                    }
+
+                }
+
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = SerieDetailUiState.Loading
+        )
 
     private val _effect = Channel<SerieDetailUiEffect>()
     val effect = _effect.receiveAsFlow()
@@ -116,6 +154,38 @@ class SerieDetailViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun preloadAsset(contentIndex: Int) {
+
+        val currentState = uiState.value
+
+        if (currentState is SerieDetailUiState.Success) {
+
+            val episode = currentState.detail.selectedSeasonContents.getOrNull(contentIndex) ?: return
+
+            viewModelScope.launch {
+
+                val metadata = getPlayerMetadataUseCase(
+                    assetId = episode.id,
+                    mediaType = episode.mediaType
+                )
+
+                if (metadata != null && metadata.sources.isNotEmpty()) {
+
+                    val bestSource = metadata.sources.first()
+
+                    streamPreloadManager.startPreload(
+                        assetId = metadata.assetId,
+                        mediaType = metadata.mediaType,
+                        source = bestSource
+                    )
+
+                }
+            }
+
+        }
+
     }
 
     fun onScreenResumed() {

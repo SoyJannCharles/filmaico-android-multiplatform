@@ -1,5 +1,6 @@
 package com.jycra.filmaico.feature.movie
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,10 +34,12 @@ import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
 import com.jycra.filmaico.core.ui.util.focus.FocusBeacon
 import com.jycra.filmaico.core.ui.util.shimmer.rememberShimmerBrush
 import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.StreamExtractionState
 
 @Composable
 fun MovieScreen(
     uiState: MovieUiState,
+    extractionState: StreamExtractionState,
     platform: Platform,
     contentPadding: PaddingValues,
     mediaFocusState: MediaFocusState,
@@ -71,6 +74,15 @@ fun MovieScreen(
         is MovieUiState.Error -> {
 
         }
+    }
+
+    if (extractionState !is StreamExtractionState.Idle && extractionState !is StreamExtractionState.Success) {
+        Log.d("MovieScreen", "ExtractionState: ${extractionState.message}")
+    }
+
+    // Manejo de errores
+    if (extractionState is StreamExtractionState.Error) {
+
     }
 
 }

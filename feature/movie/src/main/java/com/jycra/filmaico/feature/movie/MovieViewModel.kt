@@ -9,9 +9,13 @@ import com.jycra.filmaico.core.ui.feature.media.util.mapper.toUiCarousels
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
 import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.usecase.GetMediaContentUseCase
+import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
+import com.jycra.filmaico.domain.stream.util.StreamExtractionState
+import com.jycra.filmaico.shared.managers.StreamPreloadManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
@@ -21,7 +25,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MovieViewModel @Inject constructor(
-    private val getMediaContentUseCase: GetMediaContentUseCase
+    private val streamPreloadManager: StreamPreloadManager,
+    private val getMediaContentUseCase: GetMediaContentUseCase,
+    private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MovieUiState>(MovieUiState.Loading)
@@ -32,6 +38,8 @@ class MovieViewModel @Inject constructor(
 
     var mediaFocusState by mutableStateOf(MediaFocusState())
         private set
+
+    val extractionState: StateFlow<StreamExtractionState> = streamPreloadManager.extractionState
 
     init {
         observeContent()
@@ -79,6 +87,40 @@ class MovieViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun preloadAsset(carouselIndex: Int, contentIndex: Int) {
+
+        val currentState = _uiState.value
+
+        if (currentState is MovieUiState.Success) {
+
+            val carousel = currentState.carousels.getOrNull(carouselIndex) ?: return
+            val item = carousel.items.getOrNull(contentIndex) ?: return
+
+            viewModelScope.launch {
+
+                val metadata = getPlayerMetadataUseCase(
+                    assetId = item.id,
+                    mediaType = MediaType.MOVIE
+                )
+
+                if (metadata != null && metadata.sources.isNotEmpty()) {
+
+                    val bestSource = metadata.sources.first()
+
+                    streamPreloadManager.startPreload(
+                        assetId = metadata.assetId,
+                        mediaType = metadata.mediaType,
+                        source = bestSource
+                    )
+
+                }
+
+            }
+
+        }
+
     }
 
     fun onScreenResumed() {

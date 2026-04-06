@@ -1,5 +1,6 @@
 package com.jycra.filmaico.feature.movie.detail
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,12 +21,14 @@ import com.jycra.filmaico.core.ui.feature.detail.internal.SurroundingBackgroundT
 import com.jycra.filmaico.core.ui.theme.color.Gradient
 import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.util.extesion.localizedImageUrl
+import com.jycra.filmaico.domain.stream.util.StreamExtractionState
 import com.jycra.filmaico.feature.movie.detail.component.MovieDetailContent
 
 @Composable
 fun MovieDetailScreen(
     uiState: MovieDetailUiState,
     platform: Platform,
+    extractionState: StreamExtractionState,
     onEvent: (MovieDetailUiEvent) -> Unit
 ) {
 
@@ -38,6 +41,7 @@ fun MovieDetailScreen(
         is MovieDetailUiState.Success -> {
             Screen(
                 platform = platform,
+                extractionState = extractionState,
                 media = uiState.media,
                 onStartPlayback = {
                     onEvent(MovieDetailUiEvent.PlayAsset)
@@ -59,6 +63,7 @@ fun MovieDetailScreen(
 @Composable
 fun Screen(
     platform: Platform,
+    extractionState: StreamExtractionState,
     media: Media.Container,
     onStartPlayback: () -> Unit,
     onBackPressed: () -> Unit
@@ -109,6 +114,7 @@ fun Screen(
 
             MovieDetailContent(
                 platform = platform,
+                extractionState = extractionState,
                 media = media,
                 onStartPlayback = onStartPlayback,
                 onBackPressed = onBackPressed

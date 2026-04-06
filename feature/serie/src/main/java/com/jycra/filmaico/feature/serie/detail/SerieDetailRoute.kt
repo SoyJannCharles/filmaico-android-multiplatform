@@ -40,7 +40,10 @@ fun SerieDetailRoute(
         mediaFocusState = viewModel.mediaFocusState,
         mediaFocusCallbacks = MediaFocusCallbacks(
             onFocusConsumed = viewModel::markInitialFocusConsumed,
-            onFocusRestored = viewModel::markFocusRestored
+            onFocusRestored = viewModel::markFocusRestored,
+            onPreloadRequested = { _, contentIndex ->
+                viewModel.preloadAsset(contentIndex)
+            }
         ),
         onEvent = viewModel::onEvent
     )

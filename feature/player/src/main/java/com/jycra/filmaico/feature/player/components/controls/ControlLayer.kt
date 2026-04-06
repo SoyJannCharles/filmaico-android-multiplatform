@@ -19,10 +19,10 @@ import androidx.compose.ui.unit.dp
 import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.ui.theme.color.Gradient
 import com.jycra.filmaico.domain.media.model.metadata.VideoMetadata
+import com.jycra.filmaico.domain.media.util.PlayerCallbacks
 import com.jycra.filmaico.feature.player.ControlsState
 import com.jycra.filmaico.feature.player.PlaybackState
 import com.jycra.filmaico.feature.player.components.settings.SettingsMenuState
-import com.jycra.filmaico.domain.stream.util.PlayerCallbacks
 
 @Composable
 fun ControlLayer(

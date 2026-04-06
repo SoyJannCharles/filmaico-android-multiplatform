@@ -1,9 +1,7 @@
 package com.jycra.filmaico.data.stream.di
 
-import com.jycra.filmaico.data.stream.repository.AttrStreamRepositoryImpl
-import com.jycra.filmaico.data.stream.repository.StreamProcessingRepositoryImpl
-import com.jycra.filmaico.domain.stream.repository.AttrStreamRepository
-import com.jycra.filmaico.domain.stream.repository.StreamProcessingRepository
+import com.jycra.filmaico.data.stream.repository.PlaybackDataRepositoryImpl
+import com.jycra.filmaico.domain.stream.repository.PlaybackDataRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -17,13 +15,7 @@ abstract class StreamDataModule {
     @Binds
     @Singleton
     abstract fun bindStreamProcessingRepository(
-        streamProcessingRepositoryImpl: StreamProcessingRepositoryImpl
-    ): StreamProcessingRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindAttrStreamRepository(
-        attrStreamRepositoryImpl: AttrStreamRepositoryImpl
-    ): AttrStreamRepository
+        streamProcessingRepositoryImpl: PlaybackDataRepositoryImpl
+    ): PlaybackDataRepository
 
 }

@@ -1,5 +1,6 @@
-import extensions.addNetwork
 import extensions.addFirebase
+import extensions.addNetwork
+import extensions.addMedia3
 
 plugins {
     id("filmaico.android.library")
@@ -16,5 +17,6 @@ dependencies {
     implementation(project(":data:stream"))
 }
 
-addNetwork()
 addFirebase()
+addNetwork()
+addMedia3()

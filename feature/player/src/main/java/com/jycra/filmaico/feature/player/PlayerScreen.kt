@@ -41,7 +41,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.ui.R
 import com.jycra.filmaico.core.ui.SystemUiController
-import com.jycra.filmaico.domain.stream.util.PlayerCallbacks
+import com.jycra.filmaico.domain.media.util.PlayerCallbacks
 import com.jycra.filmaico.feature.player.components.VideoPlayerView
 import com.jycra.filmaico.feature.player.components.controls.ControlLayer
 import com.jycra.filmaico.feature.player.components.settings.SettingsMenu

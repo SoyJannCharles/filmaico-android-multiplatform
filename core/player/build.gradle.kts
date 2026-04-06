@@ -1,4 +1,4 @@
-import extensions.addNetwork
+import extensions.addGson
 import extensions.addMedia3
 
 plugins {
@@ -12,9 +12,10 @@ android {
 
 dependencies {
     implementation(project(":core:network"))
+    implementation(project(":data:stream"))
     implementation(project(":domain:common"))
     implementation(project(":domain:media"))
 }
 
-addNetwork()
 addMedia3()
+addGson()

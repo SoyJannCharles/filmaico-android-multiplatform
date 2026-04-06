@@ -1,5 +1,15 @@
 package com.jycra.filmaico.feature.movie.detail.component
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,13 +20,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -30,15 +50,32 @@ import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.util.extesion.localizedImageUrl
 import com.jycra.filmaico.domain.media.util.extesion.localizedName
 import com.jycra.filmaico.domain.media.util.extesion.localizedSynopsis
+import com.jycra.filmaico.domain.stream.util.StreamExtractionState
 import java.util.Calendar
 
 @Composable
 fun MovieDetailContent(
     platform: Platform,
+    extractionState: StreamExtractionState,
     media: Media.Container,
     onStartPlayback: () -> Unit,
     onBackPressed: () -> Unit = {},
 ) {
+
+    val isReady = extractionState is StreamExtractionState.Success
+
+    val infiniteTransition = rememberInfiniteTransition(label = "GlowTransition")
+    val glowProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "GlowProgress"
+    )
+
+    val buttonColor = MaterialTheme.colorScheme.primary
 
     when (platform) {
         Platform.MOBILE -> {
@@ -146,19 +183,79 @@ fun MovieDetailContent(
         )
     }
 
-    Button(
-        modifier = if (platform == Platform.MOBILE) {
-            Modifier
-                .fillMaxWidth()
-        } else Modifier,
-        shape = RoundedCornerShape(8.dp),
-        onClick = onStartPlayback,
+    Box(
+        modifier = Modifier
+            .then(
+                if (extractionState is StreamExtractionState.Success) {
+                    Modifier.drawBehind {
+
+                        val maxBlur = 20.dp.toPx()
+
+                        val glowAlpha = 0.32f - (0.2f * glowProgress)
+
+                        drawIntoCanvas { canvas ->
+
+                            val paint = Paint()
+                            val frameworkPaint = paint.asFrameworkPaint()
+
+                            frameworkPaint.color = Color.Transparent.toArgb()
+
+                            frameworkPaint.setShadowLayer(
+                                maxBlur,
+                                0f,
+                                0f,
+                                buttonColor.copy(alpha = glowAlpha).toArgb()
+                            )
+
+                            canvas.drawRoundRect(
+                                0f,
+                                0f,
+                                size.width,
+                                size.height,
+                                8.dp.toPx(),
+                                8.dp.toPx(),
+                                paint
+                            )
+
+                        }
+                    }
+                } else Modifier
+            )
     ) {
 
-        Text(
-            style = MaterialTheme.typography.titleSmall,
-            text = stringResource(R.string.moviedetail_button_play),
-        )
+        Button(
+            modifier = Modifier
+                .then(
+                    if (platform == Platform.MOBILE) {
+                        Modifier.fillMaxWidth()
+                    } else Modifier
+                ),
+            shape = RoundedCornerShape(8.dp),
+            onClick = onStartPlayback,
+            colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp) // Quitamos elevación nativa
+        ) {
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+
+                Icon(
+                    modifier = Modifier
+                        .size(24.dp),
+                    painter = painterResource(R.drawable.ic_player_play),
+                    contentDescription = "Reproducir"
+                )
+
+                Text(
+                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.moviedetail_button_play)
+                )
+
+            }
+
+        }
 
     }
 

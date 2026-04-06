@@ -129,14 +129,15 @@ fun Project.addFirestoreAnnotation() {
  */
 fun Project.addNetwork() {
     dependencies {
-        // Retrofit
+
         implementation(libs.library("retrofit-core"))
         implementation(libs.library("retrofit-converter-gson"))
-        // OkHttp
+
         val okhttpBom = libs.library("okhttp-bom")
         implementation(platform(okhttpBom))
         implementation(libs.library("okhttp-core"))
         implementation(libs.library("okhttp-logging-interceptor"))
+
     }
 }
 

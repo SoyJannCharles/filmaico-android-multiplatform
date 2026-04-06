@@ -6,6 +6,8 @@ data class MediaFocusCallbacks(
     val onFocusRestored: () -> Unit,
 
     val onFocusLeft: (Int, Int) -> Unit = { _, _ -> },
-    val onBeaconReceived: () -> Unit = {}
+    val onBeaconReceived: () -> Unit = {},
+
+    val onPreloadRequested: (carouselIndex: Int, contentIndex: Int) -> Unit = { _, _ -> }
 
 )

@@ -1,6 +1,5 @@
 import extensions.addFirebase
 import extensions.addGson
-import extensions.addNetwork
 import extensions.addRoom
 
 plugins {
@@ -23,5 +22,4 @@ dependencies {
 
 addFirebase()
 addRoom()
-addNetwork()
 addGson()

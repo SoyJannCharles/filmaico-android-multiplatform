@@ -1,4 +1,4 @@
-package com.jycra.filmaico.domain.stream.util
+package com.jycra.filmaico.domain.media.util
 
 data class PlayerCallbacks(
     val onPlayPauseToggle: () -> Unit,

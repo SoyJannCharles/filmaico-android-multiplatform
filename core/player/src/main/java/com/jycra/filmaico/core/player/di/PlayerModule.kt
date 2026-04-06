@@ -10,8 +10,9 @@ import androidx.media3.exoplayer.trackselection.AdaptiveTrackSelection
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import com.google.gson.Gson
-import com.jycra.filmaico.core.network.di.PlayerHttpClient
+import com.jycra.filmaico.core.network.di.AuthHttpClient
 import com.jycra.filmaico.core.player.PlayerManager
+import com.jycra.filmaico.core.player.RamManifestCache
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,8 +46,8 @@ object PlayerModule {
             )
             .setLoadControl(
                 DefaultLoadControl.Builder()
-                    .setBufferDurationsMs(30_000, 50_000, 1_000, 2_000)
-                    .setBackBuffer(10_000, true)
+                    .setBufferDurationsMs(30_000, 50_000, 1000, 2_000)
+                    .setBackBuffer(20_000, true)
                     .build()
             )
             .setBandwidthMeter(
@@ -61,12 +62,12 @@ object PlayerModule {
     @ViewModelScoped
     fun providePlayerManager(
         @ApplicationContext context: Context,
-        @PlayerHttpClient playerHttpClient: OkHttpClient, // <-- Ingrediente que faltaba,
-        gson: Gson, // <-- Ingrediente que faltaba,
+        @AuthHttpClient client: OkHttpClient,
+        ramManifestCache: RamManifestCache,
+        gson: Gson,
         exoPlayer: ExoPlayer
     ): PlayerManager {
-        // Ahora le pasamos todos los ingredientes que el constructor necesita
-        return PlayerManager(context, playerHttpClient, gson, exoPlayer)
+        return PlayerManager(context, client, ramManifestCache, gson, exoPlayer)
     }
 
 }

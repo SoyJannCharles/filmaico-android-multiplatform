@@ -52,6 +52,9 @@ fun ChannelRoute(
             },
             onBeaconReceived = {
                 viewModel.onScreenResumed()
+            },
+            onPreloadRequested = { carouselIndex, contentIndex ->
+                viewModel.preloadAsset(carouselIndex, contentIndex)
             }
         ),
         contentFocusBeacon = contentFocusBeacon,

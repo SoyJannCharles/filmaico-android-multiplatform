@@ -23,6 +23,7 @@ data class PlaybackState(
     val isBuffering: Boolean = false,
     val isSeeking: Boolean = false,
     val currentPosition: Long = 0L,
+    val bufferedPosition: Long = 0L,
     val totalDuration: Long = 0L,
     val bufferedPercentage: Int = 0,
     val isLive: Boolean = false

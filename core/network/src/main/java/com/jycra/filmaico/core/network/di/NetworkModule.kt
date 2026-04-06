@@ -3,14 +3,12 @@ package com.jycra.filmaico.core.network.di
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.jycra.filmaico.core.config.ConfigSource
-import com.jycra.filmaico.core.network.AttrStreamServiceImpl
 import com.jycra.filmaico.core.network.ConnectivityObserver
 import com.jycra.filmaico.core.network.NetworkConnectivityObserver
-import com.jycra.filmaico.core.network.ScrapingServiceImpl
-import com.jycra.filmaico.core.network.api.AttrStreamApiService
+import com.jycra.filmaico.core.network.StreamNetworkSource
+import com.jycra.filmaico.core.network.api.StreamApi
 import com.jycra.filmaico.core.network.cookies.AppCookieJar
-import com.jycra.filmaico.data.stream.data.service.AttrStreamService
-import com.jycra.filmaico.data.stream.data.service.ScrapingService
+import com.jycra.filmaico.data.stream.data.service.StreamService
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -30,15 +28,9 @@ abstract class NetworkModule {
 
     @Binds
     @Singleton
-    abstract fun bindAttrStreamService(
-        impl: AttrStreamServiceImpl
-    ): AttrStreamService
-
-    @Binds
-    @Singleton
-    abstract fun bindScrapingService(
-        impl: ScrapingServiceImpl
-    ): ScrapingService
+    abstract fun bindStreamService(
+        impl: StreamNetworkSource
+    ): StreamService
 
     @Binds
     @Singleton
@@ -67,21 +59,6 @@ abstract class NetworkModule {
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(15, TimeUnit.SECONDS)
                 .writeTimeout(15, TimeUnit.SECONDS)
-                .build()
-        }
-
-        @Provides
-        @Singleton
-        @PlayerHttpClient // <-- Etiqueta para el segundo cliente
-        fun providePlayerHttpClient(
-            loggingInterceptor: HttpLoggingInterceptor
-        ): OkHttpClient {
-            // Este es un cliente limpio y estándar.
-            // NO lleva el User-Agent de PC.
-            // Dejará que ExoPlayer use su User-Agent por defecto.
-            return OkHttpClient.Builder()
-                .retryOnConnectionFailure(true)
-                .addInterceptor(loggingInterceptor) // Es bueno tener logs aquí también
                 .build()
         }
 
@@ -121,8 +98,8 @@ abstract class NetworkModule {
 
         @Provides
         @Singleton
-        fun provideStreamApiService(retrofit: Retrofit): AttrStreamApiService {
-            return retrofit.create(AttrStreamApiService::class.java)
+        fun provideStreamApiService(retrofit: Retrofit): StreamApi {
+            return retrofit.create(StreamApi::class.java)
         }
 
     }

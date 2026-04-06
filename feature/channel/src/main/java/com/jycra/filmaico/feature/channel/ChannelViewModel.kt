@@ -9,6 +9,8 @@ import com.jycra.filmaico.core.ui.feature.media.util.mapper.toUiCarousels
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
 import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.usecase.GetMediaContentUseCase
+import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
+import com.jycra.filmaico.shared.managers.StreamPreloadManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +23,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ChannelViewModel @Inject constructor(
-    private val getMediaContentUseCase: GetMediaContentUseCase
+    private val streamPreloadManager: StreamPreloadManager,
+    private val getMediaContentUseCase: GetMediaContentUseCase,
+    private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ChannelUiState>(ChannelUiState.Loading)
@@ -67,6 +71,40 @@ class ChannelViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun preloadAsset(carouselIndex: Int, contentIndex: Int) {
+
+        val currentState = _uiState.value
+
+        if (currentState is ChannelUiState.Success) {
+
+            val carousel = currentState.carousels.getOrNull(carouselIndex) ?: return
+            val item = carousel.items.getOrNull(contentIndex) ?: return
+
+            viewModelScope.launch {
+
+                val metadata = getPlayerMetadataUseCase(
+                    assetId = item.id,
+                    mediaType = MediaType.CHANNEL
+                )
+
+                if (metadata != null && metadata.sources.isNotEmpty()) {
+
+                    val bestSource = metadata.sources.first()
+
+                    streamPreloadManager.startPreload(
+                        assetId = metadata.assetId,
+                        mediaType = metadata.mediaType,
+                        source = bestSource
+                    )
+
+                }
+
+            }
+
+        }
+
     }
 
     fun onScreenResumed() {

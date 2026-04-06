@@ -21,14 +21,4 @@ sealed interface Stream {
         override val type: StreamType = StreamType.WEBVIEW_SCRAP
     }
 
-    data class RegexScrap(
-        val htmlUrl: String,
-        val regexPattern: String? = null,
-        override val drmInfo: DrmInfo? = null,
-        val headers: Map<String, String>? = null,
-        val cookieUrl: String? = null
-    ) : Stream {
-        override val type: StreamType = StreamType.HTML_SCRAP
-    }
-
 }

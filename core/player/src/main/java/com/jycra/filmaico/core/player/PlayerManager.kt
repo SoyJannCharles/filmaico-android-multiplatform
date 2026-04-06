@@ -8,7 +8,8 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.DrmSessionManager
@@ -19,7 +20,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.google.gson.Gson
-import com.jycra.filmaico.core.network.di.PlayerHttpClient
+import com.jycra.filmaico.core.network.di.AuthHttpClient
 import com.jycra.filmaico.domain.media.model.metadata.PlaybackData
 import com.jycra.filmaico.domain.media.model.stream.DrmKeys
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,12 +32,12 @@ import javax.inject.Inject
 @ViewModelScoped
 class PlayerManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    @PlayerHttpClient private val httpClient: OkHttpClient,
+    @AuthHttpClient private val client: OkHttpClient,
+    private val ramManifestCache: RamManifestCache,
     private val gson: Gson,
     val exoPlayer: ExoPlayer
 ) {
 
-    private var onReadyCallback: (() -> Unit)? = null
     private var onErrorCallback: ((error: PlaybackException) -> Unit)? = null
 
     fun setPlaybackErrorCallback(callback: (error: PlaybackException) -> Unit) {
@@ -44,30 +45,9 @@ class PlayerManager @Inject constructor(
     }
 
     private val playerListener = object : Player.Listener {
-        override fun onPlaybackStateChanged(playbackState: Int) {
-            when (playbackState) {
-                Player.STATE_READY -> {
-                    onReadyCallback?.invoke()
-                }
-
-                Player.STATE_BUFFERING -> {
-
-                }
-
-                Player.STATE_ENDED -> {
-
-                }
-
-                Player.STATE_IDLE -> {
-
-                }
-            }
-        }
-
         override fun onPlayerError(error: PlaybackException) {
             onErrorCallback?.invoke(error)
         }
-
     }
 
     init {
@@ -78,11 +58,15 @@ class PlayerManager @Inject constructor(
     @OptIn(UnstableApi::class)
     fun createMediaSource(playbackData: PlaybackData): MediaSource {
 
-        val dataSourceFactory = DefaultHttpDataSource.Factory()
-            .setAllowCrossProtocolRedirects(true)
-            .setConnectTimeoutMs(15_000)
-            .setReadTimeoutMs(15_000)
+        val baseHttpDataSourceFactory = OkHttpDataSource.Factory(client)
             .setDefaultRequestProperties(playbackData.headers ?: emptyMap())
+
+        val cachingDataSourceFactory = DataSource.Factory {
+            RamCacheDataSource(
+                upstream = baseHttpDataSourceFactory.createDataSource(),
+                cache = ramManifestCache
+            )
+        }
 
         val mediaItemBuilder = MediaItem.Builder()
             .setUri(playbackData.uri)
@@ -105,11 +89,11 @@ class PlayerManager @Inject constructor(
         val mediaItem = mediaItemBuilder.build()
 
         return if (isProgressive) {
-            ProgressiveMediaSource.Factory(dataSourceFactory)
+            ProgressiveMediaSource.Factory(baseHttpDataSourceFactory)
                 .createMediaSource(mediaItem)
         } else {
             DefaultMediaSourceFactory(context)
-                .setDataSourceFactory(dataSourceFactory)
+                .setDataSourceFactory(cachingDataSourceFactory)
                 .setDrmSessionManagerProvider(createDrmManagerProvider(keys = playbackData.keys))
                 .createMediaSource(mediaItem)
         }

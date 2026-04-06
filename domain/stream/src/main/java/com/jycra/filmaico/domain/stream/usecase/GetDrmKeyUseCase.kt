@@ -3,22 +3,27 @@ package com.jycra.filmaico.domain.stream.usecase
 import com.jycra.filmaico.domain.media.model.stream.DrmInfo
 import com.jycra.filmaico.domain.media.model.stream.DrmKeys
 import com.jycra.filmaico.domain.media.model.stream.Key
-import com.jycra.filmaico.domain.stream.repository.AttrStreamRepository
+import com.jycra.filmaico.domain.stream.repository.PlaybackDataRepository
+import com.jycra.filmaico.domain.stream.util.StreamExtractionState
+import kotlinx.coroutines.ensureActive
 import javax.inject.Inject
+import kotlin.coroutines.coroutineContext
 
 class GetDrmKeyUseCase @Inject constructor(
-    private val attrStreamRepository: AttrStreamRepository
+    private val repository: PlaybackDataRepository
 ) {
 
     suspend operator fun invoke(
         contentId: String,
         drmInfo: DrmInfo,
         forceRefresh: Boolean = false,
-        onStatusUpdate: (String) -> Unit = {}
+        onStateChange: (StreamExtractionState) -> Unit
     ): DrmKeys? {
 
+        coroutineContext.ensureActive()
+
         if (!forceRefresh && drmInfo.staticKeys.isValid()) {
-            onStatusUpdate("Validando llaves de seguridad...")
+            onStateChange(StreamExtractionState.EvaluatingStaticDRMKeys)
             return DrmKeys(
                 listOf(
                     Key(
@@ -30,9 +35,11 @@ class GetDrmKeyUseCase @Inject constructor(
             )
         }
 
+        coroutineContext.ensureActive()
+
         if (drmInfo.licenseUrl.isNotBlank()) {
-            onStatusUpdate("Obteniendo autorización de red...")
-            return attrStreamRepository.fetchDrmKeysFromNetwork(drmInfo.licenseUrl)
+            onStateChange(StreamExtractionState.RequestingRemoteDRMKeys)
+            return repository.fetchDrmKeys(drmInfo.licenseUrl)
         }
 
         return null

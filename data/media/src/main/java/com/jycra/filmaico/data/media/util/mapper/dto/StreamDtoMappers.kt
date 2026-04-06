@@ -25,16 +25,6 @@ fun StreamDto.toDomain(): Stream? {
                 drmInfo = this.drmInfo?.toDomain()
             )
         }
-        StreamType.HTML_SCRAP -> {
-            val url = this.htmlUrl ?: return null
-            Stream.RegexScrap(
-                htmlUrl = url,
-                regexPattern = this.regexPattern,
-                drmInfo = this.drmInfo?.toDomain(),
-                headers = this.headers,
-                cookieUrl = this.cookieUrl
-            )
-        }
         else -> null
     }
 }

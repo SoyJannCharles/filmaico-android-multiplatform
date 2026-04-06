@@ -11,7 +11,7 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Url
 
-interface AttrStreamApiService {
+interface StreamApi {
 
     @GET
     suspend fun getJwt(@Url url: String): Response<ResponseBody>

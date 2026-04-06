@@ -17,6 +17,7 @@ fun MovieDetailRoute(
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val extractionState by viewModel.extractionState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -29,6 +30,7 @@ fun MovieDetailRoute(
 
     MovieDetailScreen(
         uiState = uiState,
+        extractionState = extractionState,
         platform = platform,
         onEvent = viewModel::onEvent
     )

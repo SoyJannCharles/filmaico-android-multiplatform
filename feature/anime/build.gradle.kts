@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":domain:common"))
     implementation(project(":domain:media"))
+    implementation(project(":feature:shared"))
 }
 
 addCoil()

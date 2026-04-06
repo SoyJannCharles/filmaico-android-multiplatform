@@ -16,8 +16,9 @@ dependencies {
     implementation(project(":core:player"))
     implementation(project(":domain:history"))
     implementation(project(":domain:common"))
-    implementation(project(":domain:stream"))
     implementation(project(":domain:media"))
+    implementation(project(":domain:stream"))
+    implementation(project(":feature:shared"))
 }
 
 addMedia3()

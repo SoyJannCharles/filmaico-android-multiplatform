@@ -22,8 +22,9 @@ import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.model.metadata.PlayerMetadata
 import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
 import com.jycra.filmaico.domain.media.usecase.ToggleSaveStatusUseCase
-import com.jycra.filmaico.domain.stream.usecase.PrepareStreamUseCase
+import com.jycra.filmaico.domain.stream.util.StreamExtractionState
 import com.jycra.filmaico.feature.player.components.settings.SettingsMenuState
+import com.jycra.filmaico.shared.managers.StreamPreloadManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -44,9 +46,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
+    private val streamPreloadManager: StreamPreloadManager,
     private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
     private val upsertMediaProgressUseCase: UpsertMediaProgressUseCase,
-    private val prepareStreamUseCase: PrepareStreamUseCase,
     private val toggleSaveStatusUseCase: ToggleSaveStatusUseCase,
     val playerManager: PlayerManager,
     savedStateHandle: SavedStateHandle,
@@ -61,6 +63,8 @@ class PlayerViewModel @Inject constructor(
 
     private val _effect = Channel<PlayerUiEffect>()
     val effect = _effect.receiveAsFlow()
+
+    val extractionState: StateFlow<StreamExtractionState> = streamPreloadManager.extractionState
 
     private val isPlaybackReady: Boolean
         get() = _uiState.value is PlayerUiState.Success
@@ -136,6 +140,10 @@ class PlayerViewModel @Inject constructor(
 
             playCurrentSource(metadata)
 
+            launch(Dispatchers.IO) {
+                preloadSiblings(metadata, mediaType)
+            }
+
         }
 
     }
@@ -156,16 +164,24 @@ class PlayerViewModel @Inject constructor(
 
             _uiState.update { PlayerUiState.Loading("Conectando con $sourceName...") }
 
-            prepareStreamUseCase(
+            val observerJob = launch {
+                extractionState.collect { state ->
+                    if (state !is StreamExtractionState.Idle && state !is StreamExtractionState.Success) {
+                        _uiState.update { PlayerUiState.Loading(state.message) }
+                    }
+                }
+            }
+
+            val result = streamPreloadManager.getStream(
                 assetId = metadata.assetId,
                 mediaType = metadata.mediaType,
                 source = source,
                 forceRefresh = forceRefresh
-            ) { status ->
-                if (_uiState.value is PlayerUiState.Loading) {
-                    _uiState.update { PlayerUiState.Loading("Conectando con $sourceName: $status") }
-                }
-            }.fold(
+            )
+
+            observerJob.cancel()
+
+            result.fold(
                 onSuccess = { playbackData ->
 
                     val player = playerManager.exoPlayer
@@ -184,15 +200,16 @@ class PlayerViewModel @Inject constructor(
                     player.setMediaSource(mediaSource)
                     player.prepare()
 
-                    if (startPosition != null)
+                    if (startPosition != null) {
                         player.seekTo(startPosition)
-                    else
+                    } else {
                         player.seekToDefaultPosition()
+                    }
 
                     player.play()
 
                 },
-                onFailure = {
+                onFailure = { error ->
                     playNextSource(metadata)
                 }
             )
@@ -224,6 +241,26 @@ class PlayerViewModel @Inject constructor(
 
     }
 
+    private suspend fun preloadSiblings(currentMetadata: PlayerMetadata, mediaType: MediaType) {
+
+        currentMetadata.nextContentId?.let { nextId ->
+            val nextMetadata = getPlayerMetadataUseCase(nextId, mediaType)
+            nextMetadata?.sources?.firstOrNull()?.let { nextSource ->
+                streamPreloadManager.prefetch(nextId, mediaType, nextSource)
+            }
+        }
+
+        delay(2000)
+
+        currentMetadata.prevContentId?.let { prevId ->
+            val prevMetadata = getPlayerMetadataUseCase(prevId, mediaType)
+            prevMetadata?.sources?.firstOrNull()?.let { prevSource ->
+                streamPreloadManager.prefetch(prevId, mediaType, prevSource)
+            }
+        }
+
+    }
+
     private fun startProgressPoller() {
 
         progressPollerJob?.cancel()
@@ -238,20 +275,26 @@ class PlayerViewModel @Inject constructor(
 
                 if (player.isPlaying) {
 
-                    val currentPos = player.currentPosition
+                    val currentPosition = player.currentPosition
+                    val bufferedPosition = player.bufferedPosition
                     val duration = player.duration
 
-                    updatePlaybackState { it.copy(currentPosition = currentPos) }
+                    updatePlaybackState { state ->
+                        state.copy(
+                            currentPosition = currentPosition,
+                            bufferedPosition = bufferedPosition
+                        )
+                    }
 
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastSavedTime >= 10_000) {
-                        saveProgress(currentPos, duration)
+                        saveProgress(currentPosition, duration)
                         lastSavedTime = currentTime
                     }
 
                 }
 
-                delay(1000)
+                delay(500)
 
             }
         }

@@ -33,6 +33,7 @@ import kotlinx.coroutines.delay
 fun PlayerSlider(
     platform: Platform,
     currentPosition: Long,
+    bufferedPosition: Long,
     totalDuration: Long,
     isSeeking: Boolean,
     onPlayPauseToggle: () -> Unit,
@@ -73,6 +74,12 @@ fun PlayerSlider(
     val sliderValue = remember(displayPosition, totalDuration) {
         if (totalDuration > 0) {
             (displayPosition.toFloat() / totalDuration).coerceIn(0f, 1f)
+        } else 0f
+    }
+
+    val bufferValue = remember(bufferedPosition, totalDuration) {
+        if (totalDuration > 0) {
+            (bufferedPosition.toFloat() / totalDuration).coerceIn(0f, 1f)
         } else 0f
     }
 
@@ -145,11 +152,20 @@ fun PlayerSlider(
 
                 val trackHeight = 4.dp.toPx()
                 val progressEndX = size.width * sliderState.value
+                val bufferEndX = size.width * bufferValue
 
                 drawLine(
-                    color = Color.White.copy(alpha = 0.3f),
+                    color = Color.White.copy(alpha = 0.2f),
                     start = Offset(0f, center.y),
                     end = Offset(size.width, center.y),
+                    strokeWidth = trackHeight,
+                    cap = StrokeCap.Round
+                )
+
+                drawLine(
+                    color = Color.White.copy(alpha = 0.5f),
+                    start = Offset(0f, center.y),
+                    end = Offset(bufferEndX, center.y),
                     strokeWidth = trackHeight,
                     cap = StrokeCap.Round
                 )

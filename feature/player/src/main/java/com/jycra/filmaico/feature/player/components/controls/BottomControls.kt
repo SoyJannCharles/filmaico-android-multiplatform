@@ -29,8 +29,8 @@ import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.ui.R
 import com.jycra.filmaico.core.ui.util.formatPlaybackTime
 import com.jycra.filmaico.domain.media.model.metadata.VideoMetadata
+import com.jycra.filmaico.domain.media.util.PlayerCallbacks
 import com.jycra.filmaico.feature.player.PlaybackState
-import com.jycra.filmaico.domain.stream.util.PlayerCallbacks
 
 @Composable
 fun BottomControls(
@@ -52,6 +52,7 @@ fun BottomControls(
             PlayerSlider(
                 platform = platform,
                 currentPosition = playbackState.currentPosition,
+                bufferedPosition = playbackState.bufferedPosition,
                 totalDuration = playbackState.totalDuration,
                 isSeeking = playbackState.isSeeking,
                 onPlayPauseToggle = callbacks.onPlayPauseToggle,

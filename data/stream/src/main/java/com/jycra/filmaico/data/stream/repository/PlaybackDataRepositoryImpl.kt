@@ -5,26 +5,33 @@ import android.util.Log
 import com.google.gson.Gson
 import com.jycra.filmaico.core.config.ConfigSource
 import com.jycra.filmaico.core.security.DecryptionManager
-import com.jycra.filmaico.data.stream.data.service.AttrStreamService
+import com.jycra.filmaico.data.stream.data.cache.StreamManifestCache
+import com.jycra.filmaico.data.stream.data.dao.StreamCacheDao
+import com.jycra.filmaico.data.stream.data.service.StreamService
 import com.jycra.filmaico.data.stream.data.store.CookieStore
 import com.jycra.filmaico.data.stream.data.store.JwtStore
+import com.jycra.filmaico.data.stream.entity.StreamCacheEntity
+import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.model.stream.DrmKeys
 import com.jycra.filmaico.domain.media.model.stream.Key
-import com.jycra.filmaico.domain.stream.repository.AttrStreamRepository
+import com.jycra.filmaico.domain.stream.repository.PlaybackDataRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
-import kotlin.collections.firstOrNull
+import javax.inject.Singleton
 
-class AttrStreamRepositoryImpl @Inject constructor(
+@Singleton
+class PlaybackDataRepositoryImpl @Inject constructor(
     private val configSource: ConfigSource,
-    private val attrStreamService: AttrStreamService,
+    private val decryptionManager: DecryptionManager,
+    private val streamService: StreamService,
+    private val streamCacheDao: StreamCacheDao,
+    private val streamManifestCache: StreamManifestCache,
     private val jwtStore: JwtStore,
     private val cookieStore: CookieStore,
-    private val decryptionManager: DecryptionManager
-) : AttrStreamRepository {
+) : PlaybackDataRepository {
 
     private val jwtUrl: String by lazy {
         decryptionManager.decrypt(configSource.getCvattvJwtUrl())
@@ -34,7 +41,11 @@ class AttrStreamRepositoryImpl @Inject constructor(
         decryptionManager.decrypt(configSource.getCvattvCdnTokenUrl())
     }
 
-    override suspend fun getProcessedUri(
+    override suspend fun resolveUrlViaWebView(iframeUrl: String): Flow<String> {
+        return streamService.resolveUrlFromWebView(iframeUrl)
+    }
+
+    override suspend fun getAuthenticatedUri(
         uri: String,
         forceRefresh: Boolean
     ): String = withContext(Dispatchers.IO) {
@@ -66,16 +77,9 @@ class AttrStreamRepositoryImpl @Inject constructor(
 
         }
 
-        val response = attrStreamService.getJwt(jwtUrl)
+        val token = streamService.fetchJwtToken(jwtUrl)
 
-        if (!response.isSuccessful) {
-            throw Exception("Error HTTP JWT principal: ${response.code()}")
-        }
-
-        val body = response.body()?.string()
-            ?: throw Exception("JWT response body es null")
-
-        val jwtMap = Gson().fromJson(body, Map::class.java)
+        val jwtMap = Gson().fromJson(token, Map::class.java)
         val jwt = jwtMap?.get("jwt") as? String
             ?: throw Exception("JWT no encontrado en respuesta")
 
@@ -121,21 +125,14 @@ class AttrStreamRepositoryImpl @Inject constructor(
         val encodedUrl = Uri.encode(videoUrl)
         val tokenUrl = "$cdnTokenUrl$encodedUrl"
 
-        val response = attrStreamService.getCdnToken(
+        val token = streamService.fetchCdnToken(
             url = tokenUrl,
             authorization = "Bearer $jwt",
             origin = "https://portal.app.flow.com.ar",
             referer = "https://portal.app.flow.com.ar/"
         )
 
-        if (!response.isSuccessful) {
-            throw Exception("CDN token request failed: ${response.code()}")
-        }
-
-        val body = response.body()?.string()
-            ?: throw Exception("CDN token response body es null")
-
-        val tokenMap = Gson().fromJson(body, Map::class.java) as? Map<String, Any>
+        val tokenMap = Gson().fromJson(token, Map::class.java) as? Map<String, Any>
         return tokenMap?.get("token") as? String
             ?: throw Exception("Token no encontrado en respuesta")
 
@@ -153,7 +150,7 @@ class AttrStreamRepositoryImpl @Inject constructor(
 
         return try {
 
-            val cookie = attrStreamService.getCookies(url).firstOrNull() ?: return null
+            val cookie = streamService.fetchCookies(url).firstOrNull() ?: return null
             val cookieString = "${cookie.name}=${cookie.value}"
 
             cookieStore.saveCookie(cookieString)
@@ -166,12 +163,12 @@ class AttrStreamRepositoryImpl @Inject constructor(
 
     }
 
-    override suspend fun fetchDrmKeysFromNetwork(url: String): DrmKeys {
+    override suspend fun fetchDrmKeys(url: String): DrmKeys {
 
-        val response = attrStreamService.getDrmKeys(
+        val response = streamService.fetchDrmKeys(
             url = url,
             userAgent = configSource.getDrmUserAgent(),
-            body = "".toRequestBody("application/octet-stream".toMediaType())
+            payload = ""
         )
 
         val decryptedKeys = response.keys.map { networkKey ->
@@ -186,6 +183,56 @@ class AttrStreamRepositoryImpl @Inject constructor(
 
         return DrmKeys(keys = decryptedKeys)
 
+    }
+
+    override suspend fun cacheStreamUrl(
+        assetId: String,
+        mediaType: MediaType,
+        url: String?
+    ) {
+
+        if (url == null) {
+            streamCacheDao.deleteCache(assetId)
+            return
+        }
+
+        val existing = streamCacheDao.getCache(assetId)
+        if (existing != null) {
+            streamCacheDao.updateUrl(assetId, url, System.currentTimeMillis())
+        } else {
+            streamCacheDao.insertCache(
+                StreamCacheEntity(
+                    assetId = assetId,
+                    cachedUrl = url,
+                    cachedDrmKeys = null,
+                    timestamp = System.currentTimeMillis(),
+                    mediaType = mediaType.value
+                )
+            )
+        }
+
+    }
+
+    override suspend fun getCachedStreamUrl(
+        assetId: String,
+        mediaType: MediaType
+    ): Pair<String?, Long?> {
+        val cache = streamCacheDao.getCache(assetId)
+        return Pair(cache?.cachedUrl, cache?.timestamp)
+    }
+
+    override suspend fun preloadHlsManifest(url: String) {
+        streamService.fetchHlsManifest(url)
+            .catch { e ->
+                Log.e("StreamPreloadManager", "Error fetching HLS manifest: ${e.message}")
+            }
+            .collect { (requestedUrl, finalUrl, content) ->
+                streamManifestCache.put(
+                    requestedUrl = requestedUrl,
+                    finalUrl = finalUrl,
+                    content = content
+                )
+            }
     }
 
 }
