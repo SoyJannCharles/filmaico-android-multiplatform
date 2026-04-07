@@ -12,13 +12,10 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
@@ -36,6 +33,7 @@ class StreamPreloadManager @Inject constructor(
 
     private var preloadingJob: Deferred<Result<PlaybackData>>? = null
     private var currentAssetId: String? = null
+    private var currentUrl: String? = null
 
     private fun isCurrentlyExtracting(): Boolean {
         return when (_extractionState.value) {
@@ -48,13 +46,16 @@ class StreamPreloadManager @Inject constructor(
 
     fun startPreload(assetId: String, mediaType: MediaType, source: Stream, forceRefresh: Boolean = false) {
 
-        if (!forceRefresh && currentAssetId == assetId && isCurrentlyExtracting()) {
+        val url = getUrlFromSource(source)
+
+        if (!forceRefresh && currentAssetId == assetId && currentUrl == url && isCurrentlyExtracting()) {
             return
         }
 
         preloadingJob?.cancel()
 
         currentAssetId = assetId
+        currentUrl = url
         _extractionState.value = StreamExtractionState.Idle
 
         preloadingJob = managerScope.async {
@@ -75,7 +76,9 @@ class StreamPreloadManager @Inject constructor(
 
     suspend fun getStream(assetId: String, mediaType: MediaType, source: Stream, forceRefresh: Boolean = false): Result<PlaybackData> {
 
-        if (!forceRefresh && currentAssetId == assetId && preloadingJob != null) {
+        val url = getUrlFromSource(source)
+
+        if (!forceRefresh && currentAssetId == assetId && currentUrl == url && preloadingJob != null) {
             try {
                 preloadingJob?.await().let { result ->
                     return result!!
@@ -87,6 +90,7 @@ class StreamPreloadManager @Inject constructor(
 
         preloadingJob?.cancel()
         currentAssetId = assetId
+        currentUrl = url
         _extractionState.value = StreamExtractionState.Idle
 
         val deferred = managerScope.async {
@@ -103,6 +107,13 @@ class StreamPreloadManager @Inject constructor(
         return prepareStreamUseCase(assetId, mediaType, source, forceRefresh) { newState ->
             Log.d("StreamPreload", "[${assetId}] -> ${newState.message}")
             _extractionState.value = newState
+        }
+    }
+
+    private fun getUrlFromSource(source: Stream): String {
+        return when (source) {
+            is Stream.Direct -> source.uri
+            is Stream.WebViewScrap -> source.iframeUrl
         }
     }
 
@@ -130,6 +141,7 @@ class StreamPreloadManager @Inject constructor(
 
         preloadingJob = null
         currentAssetId = null
+        currentUrl = null
 
         _extractionState.value = StreamExtractionState.Idle
 

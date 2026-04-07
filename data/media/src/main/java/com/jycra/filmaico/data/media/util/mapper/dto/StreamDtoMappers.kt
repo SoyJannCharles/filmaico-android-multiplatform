@@ -15,14 +15,20 @@ fun StreamDto.toDomain(): Stream? {
                 uri = uri,
                 drmInfo = this.drmInfo?.toDomain(),
                 headers = this.headers,
-                cookieUrl = this.cookieUrl
+                cookieUrl = this.cookieUrl,
+                audio = this.audio,
+                subtitle = this.subtitle,
+                provider = this.provider
             )
         }
         StreamType.WEBVIEW_SCRAP -> {
             val url = this.iframeUrl ?: return null
             Stream.WebViewScrap(
                 iframeUrl = url,
-                drmInfo = this.drmInfo?.toDomain()
+                drmInfo = this.drmInfo?.toDomain(),
+                audio = this.audio,
+                subtitle = this.subtitle,
+                provider = this.provider
             )
         }
         else -> null

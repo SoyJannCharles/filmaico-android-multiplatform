@@ -26,6 +26,8 @@ sealed class StreamExtractionState(val message: String) {
     object AwaitingNetworkTraffic : StreamExtractionState("Interceptando tráfico de red del reproductor...")
     object PreloadingManifest : StreamExtractionState("Precargando manifiesto HLS/DASH en RAM...")
 
+    object Analyzing : StreamExtractionState("Analizando calidad del stream...")
+
     // Estados Finales
     data class Success(val uri: String) : StreamExtractionState("¡Extracción completada con éxito!")
     data class Error(val errorMsg: String, val cause: Throwable? = null) : StreamExtractionState("Fallo: $errorMsg")

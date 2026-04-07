@@ -4,14 +4,14 @@ import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import com.jycra.filmaico.core.player.model.VideoQuality
+import com.jycra.filmaico.core.player.model.Quality
 
 
 @OptIn(UnstableApi::class)
-fun Player.getAvailableQualities(): List<VideoQuality> {
+fun Player.getAvailableQualities(): List<Quality> {
 
     val videoGroups = currentTracks.groups.filter { it.type == C.TRACK_TYPE_VIDEO }
-    val numericQualities = mutableListOf<VideoQuality>()
+    val numericQualities = mutableListOf<Quality>()
 
     videoGroups.forEach { group ->
         for (i in 0 until group.length) {
@@ -19,7 +19,7 @@ fun Player.getAvailableQualities(): List<VideoQuality> {
                 val format = group.getTrackFormat(i)
                 if (format.height > 0) {
                     numericQualities.add(
-                        VideoQuality(
+                        Quality(
                             height = format.height,
                             bitrate = format.bitrate,
                             label = "${format.height}p",
@@ -35,7 +35,7 @@ fun Player.getAvailableQualities(): List<VideoQuality> {
         .distinctBy { it.height }
         .sortedByDescending { it.height }
 
-    val autoOption = VideoQuality(
+    val autoOption = Quality(
         height = null,
         bitrate = 0,
         label = "Automático",

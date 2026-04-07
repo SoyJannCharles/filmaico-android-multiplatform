@@ -145,7 +145,10 @@ class StreamNetworkSource @Inject constructor(
 
                 }
 
-                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                override fun shouldOverrideUrlLoading(
+                    view: WebView?,
+                    request: WebResourceRequest?
+                ): Boolean {
                     val url = request?.url.toString()
                     return url.startsWith("intent://") || url.startsWith("market://")
                 }
@@ -160,42 +163,27 @@ class StreamNetworkSource @Inject constructor(
 
     }
 
-    override fun fetchHlsManifest(url: String): Flow<Triple<String, String, String>> = flow {
+    override fun fetchHlsManifest(
+        url: String,
+        includeChildren: Boolean
+    ): Flow<Triple<String, String, String>> = flow {
 
-        val masterResponse = downloadString(url) ?: return@flow
-        val masterFinalUrl = masterResponse.first
-        val masterContent = masterResponse.second
-
+        val (masterFinalUrl, masterContent) = downloadString(url) ?: return@flow
         emit(Triple(url, masterFinalUrl, masterContent))
 
-        val childUrls = extractChildPlaylists(masterFinalUrl, masterContent)
+        if (!includeChildren) return@flow
 
+        val childUrls = extractChildPlaylists(masterFinalUrl, masterContent)
         if (childUrls.isEmpty()) return@flow
 
         coroutineScope {
 
-            val deferredChildren = childUrls.map { childUrl ->
+            val results = childUrls.map { childUrl ->
                 async {
-
                     ensureActive()
-
-                    val childResponse = downloadString(childUrl)
-
-                    if (childResponse != null) {
-
-                        val childFinalUrl = childResponse.first
-                        val childContent = childResponse.second
-
-                        Triple(childUrl, childFinalUrl, childContent)
-
-                    } else {
-                        null
-                    }
-
+                    downloadString(childUrl)?.let { Triple(childUrl, it.first, it.second) }
                 }
-            }
-
-            val results = deferredChildren.awaitAll().filterNotNull()
+            }.awaitAll().filterNotNull()
 
             results.forEach { emit(it) }
 
@@ -267,7 +255,6 @@ class StreamNetworkSource @Inject constructor(
         return childUrls.toList()
 
     }
-
 
 
     override suspend fun fetchJwtToken(url: String): String {

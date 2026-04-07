@@ -16,5 +16,6 @@ interface PlaybackDataRepository {
     suspend fun getCachedStreamUrl(assetId: String, mediaType: MediaType): Pair<String?, Long?>
 
     suspend fun preloadHlsManifest(url: String)
+    suspend fun getManifestContent(url: String): String?
 
 }

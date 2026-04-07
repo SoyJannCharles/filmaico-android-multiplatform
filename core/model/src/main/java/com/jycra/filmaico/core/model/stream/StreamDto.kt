@@ -9,9 +9,10 @@ data class StreamDto(
     val type: String? = null,
     val uri: String? = null,
     val iframeUrl: String? = null,
-    val htmlUrl: String? = null,
-    val regexPattern: String? = null,
     val drmInfo: DrmInfoDto? = null,
     val headers: Map<String, String>? = null,
-    val cookieUrl: String? = null
+    val cookieUrl: String? = null,
+    val audio: String? = null,
+    val subtitle: String? = null,
+    val provider: String? = null
 )

@@ -218,9 +218,13 @@ private fun Screen(
             visible = uiState.controls.menuState != SettingsMenuState.NONE,
             menuState = uiState.controls.menuState,
             qualityState = uiState.quality,
+            providerState = uiState.provider,
+            audioState = uiState.audio,
             focusRequester = menuFocusRequester,
             onMenuStateChange = { newState -> onEvent(PlayerUiEvent.OnMenuNavigate(newState)) },
-            onQualityChange = { q -> onEvent(PlayerUiEvent.OnQualityChange(q)) },
+            onQualityChange = { quality -> onEvent(PlayerUiEvent.OnQualityChange(quality)) },
+            onProviderChange = { provider -> onEvent(PlayerUiEvent.OnProviderChange(provider)) },
+            onAudioChange = { audio -> onEvent(PlayerUiEvent.OnAudioChange(audio)) },
             onDismiss = { onEvent(PlayerUiEvent.OnMenuDismiss) }
         )
 

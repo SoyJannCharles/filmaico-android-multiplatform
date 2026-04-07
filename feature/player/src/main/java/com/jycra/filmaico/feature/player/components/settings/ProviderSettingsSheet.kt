@@ -1,5 +1,6 @@
 package com.jycra.filmaico.feature.player.components.settings
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -27,15 +28,17 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.jycra.filmaico.core.player.model.Quality
 import com.jycra.filmaico.core.ui.R
+import com.jycra.filmaico.domain.media.model.stream.Stream
+import com.jycra.filmaico.domain.stream.model.metadata.ProviderMetadata
 
 @Composable
-fun QualitySettingsSheet(
+fun ProviderSettingsSheet(
     focusRequester: FocusRequester,
-    qualities: List<Quality>,
-    currentQuality: Quality?,
-    onQualitySelected: (Quality) -> Unit
+    providers: List<Stream>,
+    currentProvider: Stream?,
+    analysis: Map<String, ProviderMetadata>,
+    onProviderSelected: (Stream) -> Unit
 ) {
 
     Column(
@@ -44,21 +47,29 @@ fun QualitySettingsSheet(
             .padding(8.dp)
     ) {
 
-        QualitySheetHeader(
+        ProviderSheetHeader(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
-            currentQuality = currentQuality
+            currentProvider = currentProvider
         )
 
         LazyColumn {
-            itemsIndexed(qualities) { index, quality ->
-                QualityItem(
-                    quality = quality,
-                    isSelected = quality == currentQuality,
+            itemsIndexed(providers) { index, provider ->
+
+                val url = when(provider) {
+                    is Stream.Direct -> provider.uri
+                    is Stream.WebViewScrap -> provider.iframeUrl
+                }
+
+                ProviderItem(
+                    provider = provider,
+                    isSelected = provider == currentProvider,
+                    metadata = analysis[url],
                     modifier = if (index == 0) Modifier.focusRequester(focusRequester) else Modifier,
-                    onClick = { onQualitySelected(quality) }
+                    onClick = { onProviderSelected(provider) }
                 )
+
             }
         }
 
@@ -67,9 +78,9 @@ fun QualitySettingsSheet(
 }
 
 @Composable
-private fun QualitySheetHeader(
-    modifier: Modifier = Modifier,
-    currentQuality: Quality?
+private fun ProviderSheetHeader(
+    modifier: Modifier,
+    currentProvider: Stream?
 ) {
 
     Row(
@@ -77,10 +88,10 @@ private fun QualitySheetHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
 
-        val displayText = if (currentQuality?.isAuto == true) "Auto" else "${currentQuality?.height ?: "Auto"}p"
+        val displayText = currentProvider?.provider ?: "Por defecto"
 
         Text(
-            text = "Calidad de Video · $displayText",
+            text = "Proveedor · $displayText",
             style = MaterialTheme.typography.bodyLarge,
             color = Color.White
         )
@@ -89,10 +100,11 @@ private fun QualitySheetHeader(
 }
 
 @Composable
-private fun QualityItem(
-    modifier: Modifier = Modifier,
-    quality: Quality,
+private fun ProviderItem(
+    provider: Stream,
     isSelected: Boolean,
+    metadata: ProviderMetadata?,
+    modifier: Modifier,
     onClick: () -> Unit
 ) {
 
@@ -123,20 +135,30 @@ private fun QualityItem(
         ) {
 
             Text(
-                text = quality.label,
+                text = provider?.provider ?: "Desconocido",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White
             )
 
-            Text(
-                text = if (quality.isAuto) {
-                    "Selecciona la mejor calidad sin afectar el rendimiento de tu red"
+            AnimatedContent(
+                targetState = metadata,
+                label = "analysis_fade"
+            ) { data ->
+                if (data != null) {
+                    val extraText = if (data.qualityCount > 1) " · +${data.qualityCount - 1} calidades" else ""
+                    Text(
+                        text = "${data.mainResolution}$extraText",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.6f)
+                    )
                 } else {
-                    quality.bitrateLabel
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(0.8f)
-            )
+                    Text(
+                        text = "Verificando calidad...",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.3f)
+                    )
+                }
+            }
 
         }
 

@@ -18,6 +18,7 @@ import com.jycra.filmaico.domain.stream.repository.PlaybackDataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -233,6 +234,16 @@ class PlaybackDataRepositoryImpl @Inject constructor(
                     content = content
                 )
             }
+    }
+
+    override suspend fun getManifestContent(url: String): String? {
+        return try {
+            val result = streamService.fetchHlsManifest(url, includeChildren = false).first()
+            result.third
+        } catch (e: Exception) {
+            Log.e("StreamRepository", "Error obteniendo master para análisis: ${e.message}")
+            null
+        }
     }
 
 }

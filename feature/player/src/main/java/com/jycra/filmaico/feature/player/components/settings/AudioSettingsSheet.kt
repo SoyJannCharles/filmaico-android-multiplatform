@@ -27,15 +27,15 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.jycra.filmaico.core.player.model.Quality
+import com.jycra.filmaico.domain.stream.model.metadata.AudioMetadata
 import com.jycra.filmaico.core.ui.R
 
 @Composable
-fun QualitySettingsSheet(
+fun AudioSettingsSheet(
     focusRequester: FocusRequester,
-    qualities: List<Quality>,
-    currentQuality: Quality?,
-    onQualitySelected: (Quality) -> Unit
+    audioMetadata: List<AudioMetadata>,
+    currentAudioMetadata: AudioMetadata?,
+    onAudioSelected: (AudioMetadata) -> Unit
 ) {
 
     Column(
@@ -44,20 +44,20 @@ fun QualitySettingsSheet(
             .padding(8.dp)
     ) {
 
-        QualitySheetHeader(
+        AudioSheetHeader(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
-            currentQuality = currentQuality
+            currentAudioMetadata = currentAudioMetadata
         )
 
         LazyColumn {
-            itemsIndexed(qualities) { index, quality ->
-                QualityItem(
-                    quality = quality,
-                    isSelected = quality == currentQuality,
+            itemsIndexed(audioMetadata) { index, audio ->
+                AudioItem(
+                    audioMetadata = audio,
+                    isSelected = audio == currentAudioMetadata,
                     modifier = if (index == 0) Modifier.focusRequester(focusRequester) else Modifier,
-                    onClick = { onQualitySelected(quality) }
+                    onClick = { onAudioSelected(audio) }
                 )
             }
         }
@@ -67,9 +67,9 @@ fun QualitySettingsSheet(
 }
 
 @Composable
-private fun QualitySheetHeader(
+private fun AudioSheetHeader(
     modifier: Modifier = Modifier,
-    currentQuality: Quality?
+    currentAudioMetadata: AudioMetadata?
 ) {
 
     Row(
@@ -77,21 +77,22 @@ private fun QualitySheetHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
 
-        val displayText = if (currentQuality?.isAuto == true) "Auto" else "${currentQuality?.height ?: "Auto"}p"
+        val displayText = currentAudioMetadata?.displayAudio ?: "Desconocido"
 
         Text(
-            text = "Calidad de Video · $displayText",
+            text = "Audio · $displayText",
             style = MaterialTheme.typography.bodyLarge,
             color = Color.White
         )
+
     }
 
 }
 
 @Composable
-private fun QualityItem(
+private fun AudioItem(
     modifier: Modifier = Modifier,
-    quality: Quality,
+    audioMetadata: AudioMetadata,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -123,20 +124,18 @@ private fun QualityItem(
         ) {
 
             Text(
-                text = quality.label,
+                text = audioMetadata.displayAudio,
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White
             )
 
-            Text(
-                text = if (quality.isAuto) {
-                    "Selecciona la mejor calidad sin afectar el rendimiento de tu red"
-                } else {
-                    quality.bitrateLabel
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(0.8f)
-            )
+            audioMetadata.displaySubtitle?.let { subtitle ->
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(0.8f)
+                )
+            }
 
         }
 

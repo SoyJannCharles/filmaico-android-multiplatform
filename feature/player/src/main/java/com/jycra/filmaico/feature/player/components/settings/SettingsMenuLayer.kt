@@ -23,7 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
-import com.jycra.filmaico.core.player.model.VideoQuality
+import com.jycra.filmaico.domain.stream.model.metadata.AudioMetadata
+import com.jycra.filmaico.core.player.model.Quality
+import com.jycra.filmaico.domain.media.model.stream.Stream
+import com.jycra.filmaico.feature.player.AudioState
+import com.jycra.filmaico.feature.player.ProviderState
 import com.jycra.filmaico.feature.player.QualityState
 
 @Composable
@@ -31,9 +35,13 @@ fun SettingsMenu(
     visible: Boolean,
     menuState: SettingsMenuState,
     qualityState: QualityState,
+    providerState: ProviderState,
+    audioState: AudioState,
     focusRequester: FocusRequester,
     onMenuStateChange: (SettingsMenuState) -> Unit,
-    onQualityChange: (VideoQuality) -> Unit,
+    onQualityChange: (Quality) -> Unit,
+    onProviderChange: (Stream) -> Unit,
+    onAudioChange: (AudioMetadata) -> Unit,
     onDismiss: () -> Unit
 ) {
 
@@ -81,25 +89,36 @@ fun SettingsMenu(
                             MainSettingsSheet(
                                 focusRequester = focusRequester,
                                 onQualityClick = { onMenuStateChange(SettingsMenuState.QUALITY) },
-                                /*onSpeedClick = { onMenuStateChange(SettingsMenuState.SPEED) },
-                                onSubtitlesClick = { onMenuStateChange(SettingsMenuState.SUBTITLES) }*/
+                                onProviderClick = { onMenuStateChange(SettingsMenuState.PROVIDER) },
+                                onAudioClick = { onMenuStateChange(SettingsMenuState.AUDIO) },
                                 onDismiss = onDismiss
                             )
                         }
                         SettingsMenuState.QUALITY -> {
                             QualitySettingsSheet(
-                                qualities = qualityState.qualities,
+                                qualities = qualityState.availableQualities,
                                 currentQuality = qualityState.currentQuality,
                                 focusRequester = focusRequester,
                                 onQualitySelected = onQualityChange
                             )
                         }
-                        /*SettingsMenuState.SPEED -> {
-                            // TODO: Implementar
+                        SettingsMenuState.PROVIDER -> {
+                            ProviderSettingsSheet(
+                                providers = providerState.availableProviders,
+                                currentProvider = providerState.currentProvider,
+                                analysis = providerState.analysis,
+                                focusRequester = focusRequester,
+                                onProviderSelected = onProviderChange
+                            )
                         }
-                        SettingsMenuState.SUBTITLES -> {
-                            // TODO: Implementar
-                        }*/
+                        SettingsMenuState.AUDIO -> {
+                            AudioSettingsSheet(
+                                audioMetadata = audioState.availableAudioMetadata,
+                                currentAudioMetadata = audioState.currentAudioMetadata,
+                                focusRequester = focusRequester,
+                                onAudioSelected = onAudioChange
+                            )
+                        }
                         else -> { /* Nada */ }
                     }
 

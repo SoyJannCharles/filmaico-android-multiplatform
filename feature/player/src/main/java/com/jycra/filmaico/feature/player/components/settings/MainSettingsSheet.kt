@@ -15,8 +15,8 @@ import com.jycra.filmaico.core.ui.R
 fun MainSettingsSheet(
     focusRequester: FocusRequester,
     onQualityClick: () -> Unit,
-    /*onSpeedClick: () -> Unit,
-    onSubtitlesClick: () -> Unit,*/
+    onProviderClick: () -> Unit,
+    onAudioClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
 
@@ -34,20 +34,19 @@ fun MainSettingsSheet(
             onClick = onQualityClick
         )
 
-        /*SettingsMenuItem(
-            icon = painterResource(R.drawable.ic_speed),
-            text = "Velocidad de reproducción",
+        SettingsMenuItem(
+            icon = painterResource(R.drawable.ic_host_server),
+            text = "Proveedor",
             onDismiss = onDismiss,
-            onClick = onSpeedClick
+            onClick = onProviderClick
         )
 
         SettingsMenuItem(
-            icon = painterResource(R.drawable.ic_subtitles),
-            text = "Subtítulos",
-            hasSubmenu = false,
+            icon = painterResource(R.drawable.ic_anime),
+            text = "Audio",
             onDismiss = onDismiss,
-            onClick = onSubtitlesClick
-        )*/
+            onClick = onAudioClick
+        )
 
     }
 

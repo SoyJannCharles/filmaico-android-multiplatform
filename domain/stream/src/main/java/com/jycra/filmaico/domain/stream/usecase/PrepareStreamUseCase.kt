@@ -22,6 +22,7 @@ class PrepareStreamUseCase @Inject constructor(
         mediaType: MediaType,
         source: Stream,
         forceRefresh: Boolean = false,
+        isAnalysisOnly: Boolean = false,
         onStateChange: (StreamExtractionState) -> Unit = {}
     ): Result<PlaybackData> {
 
@@ -34,7 +35,14 @@ class PrepareStreamUseCase @Inject constructor(
                     processDirectStream(assetId, source, forceRefresh, onStateChange)
                 }
                 is Stream.WebViewScrap -> {
-                    processWebViewScrapStream(assetId, mediaType, source, forceRefresh, onStateChange)
+                    processWebViewScrapStream(
+                        assetId = assetId,
+                        mediaType = mediaType,
+                        source = source,
+                        forceRefresh = forceRefresh,
+                        isAnalysisOnly = isAnalysisOnly,
+                        onStateChange = onStateChange
+                    )
                 }
             }
 
@@ -140,6 +148,7 @@ class PrepareStreamUseCase @Inject constructor(
         mediaType: MediaType,
         source: Stream.WebViewScrap,
         forceRefresh: Boolean,
+        isAnalysisOnly: Boolean,
         onStateChange: (StreamExtractionState) -> Unit
     ): Result<PlaybackData> {
 
@@ -156,18 +165,26 @@ class PrepareStreamUseCase @Inject constructor(
         coroutineContext.ensureActive()
 
         val urlWithoutParams = streamUrl.substringBefore('?').lowercase()
+        val isManifest = urlWithoutParams.endsWith(".m3u8") || urlWithoutParams.endsWith(".mpd")
 
-        if (urlWithoutParams.endsWith(".m3u8") || urlWithoutParams.endsWith(".mpd")) {
+        if (isManifest) {
 
-            coroutineContext.ensureActive()
+            if (isAnalysisOnly) {
 
-            try {
-                onStateChange(StreamExtractionState.PreloadingManifest)
-                repository.preloadHlsManifest(streamUrl)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
+                onStateChange(StreamExtractionState.Analyzing)
+                val masterContent = repository.getManifestContent(streamUrl)
 
+                return if (masterContent != null) {
+                    Result.success(PlaybackData(uri = streamUrl, manifestContent = masterContent))
+                } else {
+                    Result.failure(Exception("No se pudo obtener el manifiesto para análisis"))
+                }
+
+            } else {
+                try {
+                    onStateChange(StreamExtractionState.PreloadingManifest)
+                    repository.preloadHlsManifest(streamUrl)
+                } catch (e: Exception) { }
             }
 
         }

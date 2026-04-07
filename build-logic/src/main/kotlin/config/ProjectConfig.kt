@@ -6,8 +6,8 @@ package config
 object ProjectConfig {
     const val APPLICATION_ID_MOBILE = "com.jycra.filmaico.mobile"
     const val APPLICATION_ID_TV = "com.jycra.filmaico.tv"
-    const val VERSION_CODE = 2
-    const val VERSION_NAME = "1.1.0"
+    const val VERSION_CODE = 3
+    const val VERSION_NAME = "1.2.0"
 
     // SDK Versions
     const val COMPILE_SDK = 36

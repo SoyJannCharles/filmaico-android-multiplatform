@@ -4,6 +4,6 @@ enum class SettingsMenuState {
     NONE,
     MAIN,
     QUALITY,
-    /*SPEED,
-    SUBTITLES*/
+    AUDIO,
+    PROVIDER
 }

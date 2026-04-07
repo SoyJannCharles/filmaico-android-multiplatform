@@ -53,7 +53,7 @@ class GetStreamUrlUseCase @Inject constructor(
 
             onStateChange(StreamExtractionState.ScrapingWebView(iframeUrl))
 
-            withTimeout(20_000) {
+            withTimeout(5_000) {
                 coroutineContext.ensureActive()
                 repository.resolveUrlViaWebView(iframeUrl)
                     .first()

@@ -21,6 +21,9 @@ interface StreamService {
 
     suspend fun fetchDrmKeys(url: String, userAgent: String, payload: String): KeysDto
 
-    fun fetchHlsManifest(url: String): Flow<Triple<String, String, String>>
+    fun fetchHlsManifest(
+        url: String,
+        includeChildren: Boolean = true
+    ): Flow<Triple<String, String, String>>
 
 }

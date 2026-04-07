@@ -1,6 +1,6 @@
 package com.jycra.filmaico.core.player.model
 
-data class VideoQuality(
+data class Quality(
     val height: Int? = null,
     val bitrate: Int,
     val label: String,

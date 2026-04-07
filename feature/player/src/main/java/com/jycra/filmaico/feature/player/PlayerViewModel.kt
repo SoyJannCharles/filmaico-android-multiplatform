@@ -14,14 +14,17 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.player.PlayerManager
-import com.jycra.filmaico.core.player.model.VideoQuality
+import com.jycra.filmaico.domain.stream.model.metadata.AudioMetadata
+import com.jycra.filmaico.core.player.model.Quality
 import com.jycra.filmaico.core.player.util.getAvailableQualities
 import com.jycra.filmaico.core.player.util.setVideoQuality
 import com.jycra.filmaico.domain.history.usecase.UpsertMediaProgressUseCase
 import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.model.metadata.PlayerMetadata
+import com.jycra.filmaico.domain.media.model.stream.Stream
 import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
 import com.jycra.filmaico.domain.media.usecase.ToggleSaveStatusUseCase
+import com.jycra.filmaico.domain.stream.usecase.AnalyzeProviderUseCase
 import com.jycra.filmaico.domain.stream.util.StreamExtractionState
 import com.jycra.filmaico.feature.player.components.settings.SettingsMenuState
 import com.jycra.filmaico.shared.managers.StreamPreloadManager
@@ -48,6 +51,7 @@ import javax.inject.Inject
 class PlayerViewModel @Inject constructor(
     private val streamPreloadManager: StreamPreloadManager,
     private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
+    private val analyzeProviderUseCase: AnalyzeProviderUseCase,
     private val upsertMediaProgressUseCase: UpsertMediaProgressUseCase,
     private val toggleSaveStatusUseCase: ToggleSaveStatusUseCase,
     val playerManager: PlayerManager,
@@ -71,16 +75,18 @@ class PlayerViewModel @Inject constructor(
 
     var playerView: TextureView? = null
 
+    private var rawMetadata: PlayerMetadata? = null
+    private var filteredSources: List<Stream> = emptyList()
     private var currentSourceIndex = 0
     private var lastExecutionWasForced = false
 
     private var networkRetryCount = 0
     private val maxRetries = 3
 
+    private var isMenuInitialized = false
+
     private var controlsHideJob: Job? = null
     private var progressPollerJob: Job? = null
-
-    private var rawMetadata: PlayerMetadata? = null
 
     init {
         setupPlayerListeners()
@@ -111,6 +117,8 @@ class PlayerViewModel @Inject constructor(
             is PlayerUiEvent.OnMenuNavigate -> navigateToMenu(event.state)
             is PlayerUiEvent.OnMenuDismiss -> closeSettingsMenu()
             is PlayerUiEvent.OnQualityChange -> changeQuality(event.quality)
+            is PlayerUiEvent.OnProviderChange -> changeProvider(event.provider)
+            is PlayerUiEvent.OnAudioChange -> changeAudio(event.audioMetadata)
 
             // --- Ciclo de Vida y Navegación ---
             is PlayerUiEvent.OnPlayerReady -> onPlayerViewReady(event.playerView)
@@ -122,6 +130,8 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun loadAsset(id: String, mediaType: MediaType) {
+
+        isMenuInitialized = false
 
         viewModelScope.launch {
 
@@ -138,6 +148,10 @@ class PlayerViewModel @Inject constructor(
                 return@launch
             }
 
+            val defaultAudio = metadata.sources.first().audio
+            filteredSources = metadata.sources.filter { it.audio == defaultAudio }
+            currentSourceIndex = 0
+
             playCurrentSource(metadata)
 
             launch(Dispatchers.IO) {
@@ -149,16 +163,19 @@ class PlayerViewModel @Inject constructor(
     }
 
     @OptIn(UnstableApi::class)
-    private fun playCurrentSource(metadata: PlayerMetadata, forceRefresh: Boolean = false) {
+    private fun playCurrentSource(
+        metadata: PlayerMetadata,
+        startFromPosition: Long? = null,
+        forceRefresh: Boolean = false
+    ) {
 
-        val sources = metadata.sources
-        if (currentSourceIndex >= sources.size) {
-            _uiState.update { PlayerUiState.Error("Todas las fuentes fallaron.") }
+        if (currentSourceIndex >= filteredSources.size) {
+            _uiState.update { PlayerUiState.Error("No hay servidores disponibles.") }
             return
         }
 
-        val source = sources[currentSourceIndex]
-        val sourceName = "Fuente #${currentSourceIndex + 1}"
+        val source = filteredSources[currentSourceIndex]
+        val sourceName = source.provider
 
         viewModelScope.launch {
 
@@ -186,7 +203,7 @@ class PlayerViewModel @Inject constructor(
 
                     val player = playerManager.exoPlayer
 
-                    val startPosition = rawMetadata?.mediaType.let {
+                    val seekPos = startFromPosition ?: rawMetadata?.mediaType.let {
                         if (it != MediaType.CHANNEL) {
                             if (metadata.isFinished) 0L else metadata.lastPosition
                         } else null
@@ -200,8 +217,8 @@ class PlayerViewModel @Inject constructor(
                     player.setMediaSource(mediaSource)
                     player.prepare()
 
-                    if (startPosition != null) {
-                        player.seekTo(startPosition)
+                    if (seekPos != null) {
+                        player.seekTo(seekPos)
                     } else {
                         player.seekToDefaultPosition()
                     }
@@ -494,32 +511,124 @@ class PlayerViewModel @Inject constructor(
 
         controlsHideJob?.cancel()
 
-        val player = playerManager.exoPlayer
-        val availableQualities = player.getAvailableQualities()
-
-        val params = player.trackSelectionParameters
-
-        val isAutoEnabled = params.maxVideoWidth == Int.MAX_VALUE && params.overrides.isEmpty()
-
-        val currentQuality = if (isAutoEnabled) {
-            availableQualities.find { it.isAuto }
-        } else {
-            val currentMaxHeight = params.maxVideoHeight
-            availableQualities.find { !it.isAuto && it.height == currentMaxHeight }
-        } ?: availableQualities.first { it.isAuto }
-
         _uiState.update { state ->
             if (state is PlayerUiState.Success) {
-                state.copy(
+
+                val updatedState = if (!isMenuInitialized) {
+                    initializeMenuState(state)
+                } else state
+
+                val player = playerManager.exoPlayer
+
+                val availableQualities = player.getAvailableQualities()
+
+                val params = player.trackSelectionParameters
+                val isAutoEnabled = params.maxVideoWidth == Int.MAX_VALUE && params.overrides.isEmpty()
+
+                val currentQuality = if (isAutoEnabled) {
+                    availableQualities.find { it.isAuto }
+                } else {
+                    val currentMaxHeight = params.maxVideoHeight
+                    availableQualities.find { !it.isAuto && it.height == currentMaxHeight }
+                } ?: availableQualities.first { it.isAuto }
+
+                updatedState.copy(
                     quality = state.quality.copy(
-                        qualities = availableQualities,
+                        availableQualities = availableQualities,
                         currentQuality = currentQuality
                     ),
-                    controls = state.controls.copy(menuState = SettingsMenuState.MAIN)
+                    controls = updatedState.controls.copy(menuState = SettingsMenuState.MAIN)
                 )
+
             } else state
         }
 
+    }
+
+    private fun initializeMenuState(state: PlayerUiState.Success): PlayerUiState.Success {
+
+        val allSources = rawMetadata?.sources ?: emptyList()
+        val currentStream = filteredSources.getOrNull(currentSourceIndex)
+
+        val uniqueAudio = extractUniqueAudioMetadata(allSources)
+        val currentAudio = findCurrentAudioMetadata(uniqueAudio, currentStream)
+
+        val providersForAudio = allSources.filter { it.audio == currentAudio?.code }
+
+        startProvidersAnalysis(providersForAudio)
+
+        isMenuInitialized = true
+
+        return state.copy(
+            audio = state.audio.copy(
+                availableAudioMetadata = uniqueAudio,
+                currentAudioMetadata = currentAudio
+            ),
+            provider = state.provider.copy(
+                availableProviders = providersForAudio,
+                currentProvider = currentStream
+            )
+        )
+
+    }
+
+    private fun startProvidersAnalysis(sources: List<Stream>) {
+
+        val assetId = rawMetadata?.assetId ?: return
+        val mediaType = rawMetadata?.mediaType ?: return
+
+        sources.forEach { source ->
+
+            val url = when (source) {
+                is Stream.Direct -> source.uri
+                is Stream.WebViewScrap -> source.iframeUrl
+            }
+
+            val currentState = _uiState.value
+            if (currentState is PlayerUiState.Success && currentState.provider.analysis.containsKey(url)) {
+                return@forEach
+            }
+
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+
+                    val metadata = analyzeProviderUseCase(
+                        assetId = assetId,
+                        mediaType = mediaType,
+                        source = source
+                    )
+
+                    if (metadata != null) {
+                        _uiState.update { state ->
+                            if (state is PlayerUiState.Success) {
+                                state.copy(
+                                    provider = state.provider.copy(
+                                        analysis = state.provider.analysis + (url to metadata)
+                                    )
+                                )
+                            } else state
+                        }
+                    }
+
+                } catch (e: Exception) {
+                }
+            }
+        }
+    }
+
+    private fun extractUniqueAudioMetadata(sources: List<Stream>): List<AudioMetadata> {
+        return sources.map {
+            AudioMetadata(code = it.audio ?: "Original", subtitleCode = it.subtitle)
+        }.distinct()
+    }
+
+    private fun findCurrentAudioMetadata(
+        audioList: List<AudioMetadata>,
+        currentStream: Stream?
+    ): AudioMetadata? {
+        return audioList.find {
+            it.code == (currentStream?.audio ?: "Original") && it.subtitleCode == currentStream?.subtitle
+        } ?: audioList.firstOrNull()
     }
 
     private fun navigateToMenu(state: SettingsMenuState) {
@@ -534,7 +643,7 @@ class PlayerViewModel @Inject constructor(
 
     }
 
-    private fun changeQuality(quality: VideoQuality) {
+    private fun changeQuality(quality: Quality) {
 
         playerManager.exoPlayer.setVideoQuality(quality)
 
@@ -548,6 +657,44 @@ class PlayerViewModel @Inject constructor(
         }
 
         showControlsAndResetTimer()
+
+    }
+
+    private fun changeProvider(provider: Stream) {
+
+        val metadata = rawMetadata ?: return
+
+        val index = filteredSources.indexOf(provider)
+
+        if (index != -1) {
+
+            currentSourceIndex = index
+
+            val currentPos = playerManager.exoPlayer.currentPosition
+
+            playCurrentSource(metadata, startFromPosition = currentPos)
+
+        }
+
+    }
+
+    private fun changeAudio(audioMetadata: AudioMetadata) {
+
+        val metadata = rawMetadata ?: return
+
+        val newFilteredSources = metadata.sources.filter { it.audio == audioMetadata.code }
+
+        if (newFilteredSources.isNotEmpty()) {
+
+            filteredSources = newFilteredSources
+
+            currentSourceIndex = 0
+
+            val currentPos = playerManager.exoPlayer.currentPosition
+
+            playCurrentSource(metadata, startFromPosition = currentPos)
+
+        }
 
     }
 
@@ -628,7 +775,9 @@ class PlayerViewModel @Inject constructor(
                                         isBuffering = false
                                     ),
                                     controls = ControlsState(isVisible = true),
-                                    quality = QualityState()
+                                    quality = QualityState(),
+                                    provider = ProviderState(),
+                                    audio = AudioState()
                                 )
                             }
 

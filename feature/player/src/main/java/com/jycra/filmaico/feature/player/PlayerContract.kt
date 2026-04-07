@@ -2,8 +2,11 @@ package com.jycra.filmaico.feature.player
 
 import android.view.TextureView
 import com.jycra.filmaico.core.device.Platform
-import com.jycra.filmaico.core.player.model.VideoQuality
+import com.jycra.filmaico.domain.stream.model.metadata.AudioMetadata
+import com.jycra.filmaico.core.player.model.Quality
 import com.jycra.filmaico.domain.media.model.metadata.VideoMetadata
+import com.jycra.filmaico.domain.media.model.stream.Stream
+import com.jycra.filmaico.domain.stream.model.metadata.ProviderMetadata
 import com.jycra.filmaico.feature.player.components.settings.SettingsMenuState
 
 sealed interface PlayerUiState {
@@ -12,7 +15,9 @@ sealed interface PlayerUiState {
         val videoMetadata: VideoMetadata,
         val playback: PlaybackState,
         val controls: ControlsState,
-        val quality: QualityState
+        val quality: QualityState,
+        val provider: ProviderState,
+        val audio: AudioState
     ) : PlayerUiState
     data class Error(val message: String) : PlayerUiState
     data object Closing : PlayerUiState
@@ -35,8 +40,19 @@ data class ControlsState(
 )
 
 data class QualityState(
-    val qualities: List<VideoQuality> = emptyList(),
-    val currentQuality: VideoQuality? = null
+    val availableQualities: List<Quality> = emptyList(),
+    val currentQuality: Quality? = null
+)
+
+data class ProviderState(
+    val availableProviders: List<Stream> = emptyList(),
+    val currentProvider: Stream? = null,
+    val analysis: Map<String, ProviderMetadata> = emptyMap()
+)
+
+data class AudioState(
+    val availableAudioMetadata: List<AudioMetadata> = emptyList(),
+    val currentAudioMetadata: AudioMetadata? = null
 )
 
 sealed interface PlayerUiEvent {
@@ -62,7 +78,9 @@ sealed interface PlayerUiEvent {
     // Menú de Configuración
     data object OnSettingsClick : PlayerUiEvent
     data class OnMenuNavigate(val state: SettingsMenuState) : PlayerUiEvent
-    data class OnQualityChange(val quality: VideoQuality) : PlayerUiEvent
+    data class OnQualityChange(val quality: Quality) : PlayerUiEvent
+    data class OnProviderChange(val provider: Stream) : PlayerUiEvent
+    data class OnAudioChange(val audioMetadata: AudioMetadata) : PlayerUiEvent
     data object OnMenuDismiss : PlayerUiEvent
 
     // Navegación
