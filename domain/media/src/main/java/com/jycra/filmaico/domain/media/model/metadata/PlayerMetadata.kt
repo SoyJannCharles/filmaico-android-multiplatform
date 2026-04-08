@@ -46,7 +46,7 @@ data class PlayerMetadata(
             imageUrl = mapOf("default" to (thumbnailPath ?: this.imageUrl)),
             order = this.order,
             lastPosition = currentPos,
-            duration = totalDuration / 1000,
+            duration = totalDuration / 60 / 1000,
             isFinished = isFinished,
             lastWatchedMillis = System.currentTimeMillis()
         )

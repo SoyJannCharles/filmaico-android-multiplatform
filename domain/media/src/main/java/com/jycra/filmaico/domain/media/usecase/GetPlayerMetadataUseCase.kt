@@ -33,7 +33,7 @@ class GetPlayerMetadataUseCase @Inject constructor(
             imageUrl = asset.localizedImageUrl,
             isSaved = asset.isSaved,
             order = asset.number ?: 0,
-            duration = asset.duration?.let { it * 1000L } ?: 0,
+            duration = asset.duration?.let { it * 60000L } ?: 0,
             lastPosition = progress?.lastPosition ?: 0L,
             isFinished = progress?.isFinished ?: false,
             isLive = asset.isLive,
