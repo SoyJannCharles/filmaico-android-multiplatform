@@ -10,7 +10,7 @@ import android.webkit.WebViewClient
 import com.jycra.filmaico.core.model.stream.CookieDto
 import com.jycra.filmaico.core.model.stream.KeysDto
 import com.jycra.filmaico.core.network.api.StreamApi
-import com.jycra.filmaico.core.network.di.AuthHttpClient
+import com.jycra.filmaico.core.network.di.XAuthHttpClient
 import com.jycra.filmaico.data.stream.data.service.StreamService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -18,7 +18,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
@@ -46,7 +45,7 @@ import kotlin.coroutines.resume
 class StreamNetworkSource @Inject constructor(
     private val streamApi: StreamApi,
     @ApplicationContext private val context: Context,
-    @AuthHttpClient private val client: OkHttpClient,
+    @XAuthHttpClient private val client: OkHttpClient,
     private val engine: StreamExtractionEngine
 ) : StreamService {
 

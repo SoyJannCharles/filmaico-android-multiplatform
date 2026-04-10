@@ -20,7 +20,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.google.gson.Gson
-import com.jycra.filmaico.core.network.di.AuthHttpClient
+import com.jycra.filmaico.core.network.di.XAuthHttpClient
 import com.jycra.filmaico.domain.media.model.metadata.PlaybackData
 import com.jycra.filmaico.domain.media.model.stream.DrmKeys
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -32,7 +32,7 @@ import javax.inject.Inject
 @ViewModelScoped
 class PlayerManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    @AuthHttpClient private val client: OkHttpClient,
+    @XAuthHttpClient private val xAuthClient: OkHttpClient,
     private val ramManifestCache: RamManifestCache,
     private val gson: Gson,
     val exoPlayer: ExoPlayer
@@ -58,7 +58,7 @@ class PlayerManager @Inject constructor(
     @OptIn(UnstableApi::class)
     fun createMediaSource(playbackData: PlaybackData): MediaSource {
 
-        val baseHttpDataSourceFactory = OkHttpDataSource.Factory(client)
+        val baseHttpDataSourceFactory = OkHttpDataSource.Factory(xAuthClient)
             .setDefaultRequestProperties(playbackData.headers ?: emptyMap())
 
         val cachingDataSourceFactory = DataSource.Factory {

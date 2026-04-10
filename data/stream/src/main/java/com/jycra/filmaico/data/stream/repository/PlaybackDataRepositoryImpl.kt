@@ -144,9 +144,16 @@ class PlaybackDataRepositoryImpl @Inject constructor(
         forceRefresh: Boolean
     ): String? {
 
-        val cachedCookie = cookieStore.getCookie()
-        if (cachedCookie != null) {
-            return cachedCookie
+        val currentTimeSec = System.currentTimeMillis() / 1000
+
+        if (!forceRefresh) {
+            val cachedCookie = cookieStore.getCookie()
+            if (cachedCookie != null) {
+                val exp = extractExpFromCookie(cachedCookie)
+                if (exp > currentTimeSec + 60L) {
+                    return cachedCookie
+                }
+            }
         }
 
         return try {
@@ -162,6 +169,15 @@ class PlaybackDataRepositoryImpl @Inject constructor(
             null
         }
 
+    }
+
+    private fun extractExpFromCookie(cookie: String): Long {
+        return try {
+            val match = Regex("exp=(\\d+)").find(cookie)
+            match?.groupValues?.get(1)?.toLong() ?: 0L
+        } catch (e: Exception) {
+            0L
+        }
     }
 
     override suspend fun fetchDrmKeys(url: String): DrmKeys {

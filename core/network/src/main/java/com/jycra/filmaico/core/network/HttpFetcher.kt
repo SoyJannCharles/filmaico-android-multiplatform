@@ -1,12 +1,12 @@
 package com.jycra.filmaico.core.network
 
-import com.jycra.filmaico.core.network.di.AuthHttpClient
+import com.jycra.filmaico.core.network.di.XAuthHttpClient
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import javax.inject.Inject
 
 class HttpFetcher @Inject constructor(
-    @AuthHttpClient private val client: OkHttpClient
+    @XAuthHttpClient private val client: OkHttpClient
 ) {
 
     suspend fun getHtml(url: String): String? {

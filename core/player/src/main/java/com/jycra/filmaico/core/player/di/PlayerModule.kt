@@ -10,7 +10,7 @@ import androidx.media3.exoplayer.trackselection.AdaptiveTrackSelection
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import com.google.gson.Gson
-import com.jycra.filmaico.core.network.di.AuthHttpClient
+import com.jycra.filmaico.core.network.di.XAuthHttpClient
 import com.jycra.filmaico.core.player.PlayerManager
 import com.jycra.filmaico.core.player.RamManifestCache
 import dagger.Module
@@ -62,7 +62,7 @@ object PlayerModule {
     @ViewModelScoped
     fun providePlayerManager(
         @ApplicationContext context: Context,
-        @AuthHttpClient client: OkHttpClient,
+        @XAuthHttpClient client: OkHttpClient,
         ramManifestCache: RamManifestCache,
         gson: Gson,
         exoPlayer: ExoPlayer

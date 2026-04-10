@@ -4,8 +4,12 @@ import jakarta.inject.Qualifier
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
-annotation class AuthHttpClient
+annotation class XAuthHttpClient
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
-annotation class PlayerHttpClient
+annotation class FailFastInterceptor
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class XAuthInterceptor
