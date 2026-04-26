@@ -14,7 +14,7 @@ import com.jycra.filmaico.data.media.util.mapper.dto.toEntity
 import com.jycra.filmaico.data.media.util.mapper.dto.toMappingResult
 import com.jycra.filmaico.data.media.util.mapper.entity.toAsset
 import com.jycra.filmaico.data.media.util.mapper.entity.toDomain
-import com.jycra.filmaico.domain.common.content.model.ContentStatus
+import com.jycra.filmaico.domain.media.model.ContentStatus
 import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.model.MediaCarousel
 import com.jycra.filmaico.domain.media.model.MediaType

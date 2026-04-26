@@ -9,13 +9,20 @@ sealed class AccountUiState {
     data class Success(
         val uiPanel: UiPanel,
         val selectedSection: PanelSection = PanelSection.MY_PROFILE,
+        val isLinking: Boolean = false,
         val linkingCode: String = "",
-        val linkingError: AuthError? = null,
-        val isLinking: Boolean = false
+        val linkingError: AuthError? = null
     ) : AccountUiState()
     data class Error(val message: String) : AccountUiState()
     object Unauthenticated : AccountUiState()
 }
+
+data class PanelLocalState(
+    val selectedSection: PanelSection = PanelSection.MY_PROFILE,
+    val isLinking: Boolean = false,
+    val linkingCode: String = "",
+    val linkingError: AuthError? = null
+)
 
 sealed class PanelUiEvent {
     data class SectionSelected(val section: PanelSection) : PanelUiEvent()

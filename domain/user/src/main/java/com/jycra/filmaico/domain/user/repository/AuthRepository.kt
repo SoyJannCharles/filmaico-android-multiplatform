@@ -2,8 +2,8 @@ package com.jycra.filmaico.domain.user.repository
 
 import com.jycra.filmaico.domain.user.error.AuthError
 import com.jycra.filmaico.domain.user.model.AuthToken
-import com.jycra.filmaico.domain.user.model.User
 import com.jycra.filmaico.domain.user.util.AuthResult
+import com.jycra.filmaico.domain.user.util.SessionStatus
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
@@ -19,10 +19,9 @@ interface AuthRepository {
     suspend fun signOut()
     suspend fun signOutLocal()
 
-    suspend fun getCurrentUser(): User?
+    fun observeSessionStatus(): Flow<SessionStatus>
 
     suspend fun hasActiveSubscription(): Boolean
-    fun observeSessionStatus(): Flow<Boolean>
     fun observeSubscriptionStatus(): Flow<Boolean>
 
     suspend fun registerDeviceSession(): AuthResult<Unit, AuthError>

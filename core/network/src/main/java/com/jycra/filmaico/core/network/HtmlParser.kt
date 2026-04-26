@@ -1,30 +1,29 @@
 package com.jycra.filmaico.core.network
 
+import org.jsoup.Jsoup
 import java.net.URI
 
 object HtmlParser {
 
-    fun extractVideoId(url: String): String? =
-        url.substringAfterLast("/").substringBefore("?")
+    fun extractVideoId(url: String): String? {
+        return url.substringAfterLast("/", "")
+            .substringBefore("?", "")
+            .ifEmpty { null }
+    }
 
     fun extractScripts(html: String, baseUrl: String): List<String> {
 
-        val regex = Regex(
-            "<script[^>]+src=[\"']([^\"']+\\.js[^\"']*)[\"']",
-            RegexOption.IGNORE_CASE
-        )
+        val doc = Jsoup.parse(html, baseUrl)
 
-        val uri = URI(baseUrl)
+        val scriptElements = doc.select("script[src]")
 
-        return regex.findAll(html)
-            .map { it.groupValues[1] }
-            .filterNot {
-                it.contains("cloudflare") || it.contains("analytics")
-            }
-            .map { path ->
-                if (path.startsWith("/")) {
-                    "${uri.scheme}://${uri.host}$path"
-                } else path
+        return scriptElements
+            .map { it.attr("abs:src") }
+            .filter { url ->
+                val lowerUrl = url.lowercase()
+                !lowerUrl.contains("cloudflare") &&
+                        !lowerUrl.contains("analytics") &&
+                        !lowerUrl.contains("ads")
             }
             .toList()
 

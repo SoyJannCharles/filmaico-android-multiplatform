@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.jycra.filmaico.core.ui.R
-import com.jycra.filmaico.domain.common.content.model.ContentStatus
+import com.jycra.filmaico.domain.media.model.ContentStatus
 
 @Composable
 fun MediaStatusChip(

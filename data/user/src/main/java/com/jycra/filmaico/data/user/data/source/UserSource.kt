@@ -12,6 +12,9 @@ import com.jycra.filmaico.core.model.user.UserDto
 import com.jycra.filmaico.domain.user.error.AuthError
 import com.jycra.filmaico.domain.user.model.AuthStatus
 import com.jycra.filmaico.domain.user.util.AuthResult
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.util.Date
@@ -100,6 +103,27 @@ class UserSource @Inject constructor(
         } catch (e: Exception) {
             AuthResult.Failure(AuthError.Unknown)
         }
+    }
+
+    fun observeUser(uid: String): Flow<UserDto?> = callbackFlow {
+
+        val docRef = firestore.collection(collection).document(uid)
+
+        val subscription = docRef.addSnapshotListener { snapshot, error ->
+
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+
+            val user = snapshot?.toObject(UserDto::class.java)
+
+            trySend(user)
+
+        }
+
+        awaitClose { subscription.remove() }
+
     }
 
     suspend fun getUser(uid: String): UserDto? {

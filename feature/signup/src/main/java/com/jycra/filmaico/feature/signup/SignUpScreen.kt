@@ -68,7 +68,7 @@ private fun Screen(
                 ActionLink(
                     questionText = stringResource(R.string.signup_text_i_have_account),
                     actionText = stringResource(R.string.signup_link_go_to_signin),
-                    onActionClick = { onEvent(SignUpUiEvent.SignUpTriggered) }
+                    onActionClick = { onEvent(SignUpUiEvent.SignInTriggered) }
                 )
 
             }

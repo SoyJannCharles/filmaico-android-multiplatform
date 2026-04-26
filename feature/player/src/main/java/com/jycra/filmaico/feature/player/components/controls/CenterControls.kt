@@ -24,7 +24,7 @@ fun CenterControls(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
 
@@ -58,12 +58,12 @@ fun CenterControls(
 
         IconButton(
             modifier = Modifier
-                .size(32.dp),
+                .size(48.dp),
             onClick = callbacks.onPlayPauseToggle
         ) {
             Icon(
                 modifier = Modifier
-                    .size(32.dp),
+                    .size(48.dp),
                 painter = painterResource(
                     if (isPlaying) {
                         R.drawable.ic_player_pause

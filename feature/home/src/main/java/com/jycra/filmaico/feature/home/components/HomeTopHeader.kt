@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.jycra.filmaico.core.common.time.formatDaysRemaining
 import com.jycra.filmaico.core.ui.component.tab.TabItem
 import com.jycra.filmaico.core.ui.theme.color.Gradient
 import com.jycra.filmaico.feature.home.HomeUiState
@@ -33,7 +32,7 @@ fun HomeTopHeader(
     ) {
 
         val daysRemaining = when (uiState) {
-            is HomeUiState.Success -> formatDaysRemaining(uiState.subscriptionDaysRemaining)
+            is HomeUiState.Ready -> uiState.expirationText.asString()
             else -> "--"
         }
 

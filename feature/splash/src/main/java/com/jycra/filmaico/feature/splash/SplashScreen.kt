@@ -41,6 +41,9 @@ fun SplashScreen(
             is SplashUiState.Error -> {
 
             }
+            SplashUiState.ReadyToCheckSession -> {
+
+            }
         }
 
     }

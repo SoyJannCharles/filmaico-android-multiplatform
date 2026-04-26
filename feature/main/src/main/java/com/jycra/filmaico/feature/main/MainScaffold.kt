@@ -55,6 +55,7 @@ fun MainScaffold(
 ) {
 
     when (uiState) {
+        is MainUiState.Idle -> {}
         is MainUiState.Loading -> {
             Box(
                 modifier = Modifier
@@ -65,7 +66,7 @@ fun MainScaffold(
                 CircularProgressIndicator()
             }
         }
-        is MainUiState.Success -> {
+        is MainUiState.Ready -> {
             when (platform) {
                 Platform.MOBILE -> MainScaffoldMobile(
                     platform = platform,

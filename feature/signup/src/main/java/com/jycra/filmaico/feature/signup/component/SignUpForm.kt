@@ -15,10 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.jycra.filmaico.core.ui.R
-import com.jycra.filmaico.core.ui.component.field.FormTextField
+import com.jycra.filmaico.core.ui.component.field.FilmaicoTextField
 import com.jycra.filmaico.domain.user.error.AuthError
 import com.jycra.filmaico.feature.signup.SignUpUiEvent
 import com.jycra.filmaico.feature.signup.SignUpUiState
@@ -44,7 +43,7 @@ fun SignUpForm(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        FormTextField(
+        FilmaicoTextField(
             value = uiState.email,
             onValueChange = { onEvent(SignUpUiEvent.EmailChange(it)) },
             label = stringResource(R.string.signup_label_email),
@@ -53,12 +52,12 @@ fun SignUpForm(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        FormTextField(
-            visualTransformation = PasswordVisualTransformation(),
+        FilmaicoTextField(
             value = uiState.password,
             onValueChange = { onEvent(SignUpUiEvent.PasswordChange(it)) },
             label = stringResource(R.string.signup_label_password),
-            isError = uiState.error != null
+            isError = uiState.error != null,
+            isPasswordField = true
         )
 
         uiState.error?.let { error ->

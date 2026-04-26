@@ -1,4 +1,4 @@
-package com.jycra.filmaico.domain.common.content.model
+package com.jycra.filmaico.domain.media.model
 
 enum class ContentStatus(val value: String) {
 

@@ -1,6 +1,7 @@
 package com.jycra.filmaico.mobile
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,12 +24,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.jycra.filmaico.core.app.AppViewModel
 import com.jycra.filmaico.core.navigation.route.AppRoutes
-import com.jycra.filmaico.core.network.ConnectivityObserver
 import com.jycra.filmaico.core.ui.component.banner.NetworkStatusBanner
 import com.jycra.filmaico.core.ui.theme.FilmaicoTheme
-import com.jycra.filmaico.data.user.util.SessionObserver
+import com.jycra.filmaico.domain.network.ConnectivityObserver
+import com.jycra.filmaico.domain.user.util.SessionStatus
 import dagger.hilt.android.AndroidEntryPoint
-import kotlin.getValue
 
 @AndroidEntryPoint
 class MobileMainActivity : ComponentActivity() {
@@ -43,28 +43,44 @@ class MobileMainActivity : ComponentActivity() {
 
         setContent {
 
-            val globalState by mainViewModel.globalState.collectAsStateWithLifecycle()
             val navController = rememberNavController()
 
-            LaunchedEffect(globalState.sessionStatus) {
+            val sessionStatus by mainViewModel.sessionStatus.collectAsStateWithLifecycle()
+            val isSubActive by mainViewModel.isSubscriptionActive.collectAsStateWithLifecycle()
 
+            val networkStatus by mainViewModel.networkStatus.collectAsStateWithLifecycle()
+
+            LaunchedEffect(sessionStatus, isSubActive) {
                 val currentRoute = navController.currentBackStackEntry?.destination?.route
+                val status = sessionStatus
 
-                when (globalState.sessionStatus) {
-                    SessionObserver.SessionStatus.Invalid -> {
-                        if (currentRoute != AppRoutes.SPLASH && currentRoute != AppRoutes.SIGN_IN) {
-                            mainViewModel.signOut()
-                            navController.navigate(AppRoutes.SPLASH) {
+                when (status) {
+
+                    is SessionStatus.Authenticated -> {
+
+                        val destination = if (isSubActive) AppRoutes.MAIN else AppRoutes.SUBSCRIPTION
+
+                        if (currentRoute == AppRoutes.SIGN_IN || currentRoute == AppRoutes.SPLASH) {
+                            navController.navigate(destination) { popUpTo(0) { inclusive = true } }
+                        } else if (!isSubActive && currentRoute != AppRoutes.SUBSCRIPTION) {
+                            navController.navigate(AppRoutes.SUBSCRIPTION) {
+                                popUpTo(AppRoutes.MAIN) { inclusive = true }
+                            }
+                        }
+
+                    }
+
+                    is SessionStatus.Unauthenticated, SessionStatus.MissedDocument -> {
+                        if (currentRoute != AppRoutes.SIGN_IN && currentRoute != AppRoutes.SPLASH) {
+                            navController.navigate(AppRoutes.SIGN_IN) {
                                 popUpTo(0) { inclusive = true }
                             }
                         }
                     }
-                    SessionObserver.SessionStatus.Loading -> {
 
+                    is SessionStatus.Checking -> {
                     }
-                    SessionObserver.SessionStatus.Valid -> {
 
-                    }
                 }
 
             }
@@ -86,11 +102,11 @@ class MobileMainActivity : ComponentActivity() {
                     }
 
                     AnimatedVisibility(
-                        visible = globalState.networkStatus != ConnectivityObserver.Status.Available,
+                        visible = networkStatus != ConnectivityObserver.Status.Available,
                         enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
                         exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
                     ) {
-                        NetworkStatusBanner(status = globalState.networkStatus)
+                        NetworkStatusBanner(status = networkStatus)
                     }
 
                 }

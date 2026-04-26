@@ -7,6 +7,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
@@ -87,6 +88,8 @@ class PlayerManager @Inject constructor(
         }
 
         val mediaItem = mediaItemBuilder.build()
+
+        Log.e("DRMKeys", "${playbackData.keys}")
 
         return if (isProgressive) {
             ProgressiveMediaSource.Factory(baseHttpDataSourceFactory)

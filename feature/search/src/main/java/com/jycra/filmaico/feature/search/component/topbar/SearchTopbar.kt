@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.ui.component.FilmaicoLogo
-import com.jycra.filmaico.core.ui.component.field.FormTextField
+import com.jycra.filmaico.core.ui.component.field.FilmaicoTextField
 import com.jycra.filmaico.core.ui.component.field.SearchTextField
 import com.jycra.filmaico.core.ui.theme.color.Gradient
 import com.jycra.filmaico.feature.search.SearchUiState
@@ -95,7 +95,7 @@ private fun SearchBarMobile(
 
                 Spacer(Modifier.height(24.dp))
 
-                FormTextField(
+                FilmaicoTextField(
                     value = uiState.searchQuery,
                     onValueChange = { onQueryChange(it) },
                     label = "Search"

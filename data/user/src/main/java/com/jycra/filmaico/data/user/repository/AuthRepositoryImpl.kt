@@ -1,9 +1,7 @@
 package com.jycra.filmaico.data.user.repository
 
 import android.os.Build
-import android.util.Log
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
 import com.jycra.filmaico.core.model.user.AuthTokenDto
@@ -16,12 +14,16 @@ import com.jycra.filmaico.data.user.data.store.SessionStore
 import com.jycra.filmaico.data.user.mapper.toDomain
 import com.jycra.filmaico.domain.user.error.AuthError
 import com.jycra.filmaico.domain.user.model.AuthToken
-import com.jycra.filmaico.domain.user.model.User
 import com.jycra.filmaico.domain.user.repository.AuthRepository
 import com.jycra.filmaico.domain.user.util.AuthResult
+import com.jycra.filmaico.domain.user.util.SessionStatus
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -140,45 +142,37 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun signOutLocal() {
-        sessionStore.clearSessionId()
-        authSource.signOut()
+        /*sessionStore.clearSessionId()
+        authSource.signOut()*/
     }
 
-    override suspend fun getCurrentUser(): User? {
-        val account = authSource.getCurrentUser() ?: return null
-        return userSource.getUser(account.uid)?.toDomain()
-    }
+    override fun observeSessionStatus(): Flow<SessionStatus> = authSource.getActiveSessionId()
+        .flatMapLatest { uid ->
+            if (uid == null) flowOf(SessionStatus.Unauthenticated)
+            else {
+
+                val ticker = flow {
+                    while (true) {
+                        emit(Unit)
+                        delay(30_000)
+                    }
+                }
+
+                combine(userSource.observeUser(uid), ticker) { user, _ ->
+                    if (user != null)
+                        SessionStatus.Authenticated(user = user.toDomain())
+                    else
+                        SessionStatus.MissedDocument
+                }
+
+            }
+        }
+        .distinctUntilChanged()
 
     override suspend fun hasActiveSubscription(): Boolean {
         return userSource.getUser(
             uid = authSource.getCurrentUser()?.uid ?: return false
         )?.subscription?.isActive() == true
-    }
-
-    override fun observeSessionStatus(): Flow<Boolean> {
-
-        val uid = authSource.getCurrentUser()?.uid ?: return flowOf(false)
-        val currentDeviceId = deviceIdProvider.getDeviceId()
-
-        val userReference = userSource.getUserReference(uid)
-
-        return userReference.snapshots().map { documentSnapshot ->
-
-            val userDto = documentSnapshot.toObject<UserDto>()
-
-            val isSubscriptionActive = userDto?.subscription?.isActive() == true
-            val isDeviceAuthorized = userDto?.activeSessions?.any { session ->
-                session.deviceId == currentDeviceId
-            } == true
-
-            isSubscriptionActive && isDeviceAuthorized
-
-        }
-            .distinctUntilChanged()
-            .catch { e ->
-                emit(false)
-            }
-
     }
 
     override fun observeSubscriptionStatus(): Flow<Boolean> {

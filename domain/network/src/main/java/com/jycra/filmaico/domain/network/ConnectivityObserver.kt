@@ -1,4 +1,4 @@
-package com.jycra.filmaico.core.network
+package com.jycra.filmaico.domain.network
 
 import kotlinx.coroutines.flow.Flow
 

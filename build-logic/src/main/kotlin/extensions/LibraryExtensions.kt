@@ -138,6 +138,8 @@ fun Project.addNetwork() {
         implementation(libs.library("okhttp-core"))
         implementation(libs.library("okhttp-logging-interceptor"))
 
+        implementation(libs.library("jsoup"))
+
     }
 }
 

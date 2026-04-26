@@ -15,7 +15,6 @@ android {
 dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:model"))
-    implementation(project(":domain:common"))
     implementation(project(":domain:stream"))
     implementation(project(":domain:media"))
 }

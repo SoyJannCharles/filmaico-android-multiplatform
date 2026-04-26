@@ -7,6 +7,7 @@ import com.jycra.filmaico.domain.media.model.stream.Stream
 import com.jycra.filmaico.domain.stream.repository.PlaybackDataRepository
 import com.jycra.filmaico.domain.stream.util.StreamExtractionState
 import kotlinx.coroutines.ensureActive
+import java.io.IOException
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
@@ -48,6 +49,9 @@ class PrepareStreamUseCase @Inject constructor(
 
         } catch (e: CancellationException) {
             throw e
+        } catch (e: IOException) {
+            onStateChange(StreamExtractionState.Error(e.message ?: "Error desconocido", e))
+            Result.failure(e)
         } catch (e: Exception) {
             onStateChange(StreamExtractionState.Error(e.message ?: "Error desconocido", e))
             Result.failure(e)

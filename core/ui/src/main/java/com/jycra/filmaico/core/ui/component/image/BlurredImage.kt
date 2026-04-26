@@ -3,6 +3,7 @@ package com.jycra.filmaico.core.ui.component.image
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +29,7 @@ import coil3.request.transformations
 import com.jycra.filmaico.core.ui.R
 import com.jycra.filmaico.core.ui.util.transform.LegacyBlurTransformation
 
+@RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun BlurredImage(
     modifier: Modifier = Modifier,
@@ -38,6 +40,9 @@ fun BlurredImage(
 ) {
 
     val context = LocalContext.current
+    val density = LocalDensity.current
+
+    var useLegacyBlur by remember { mutableStateOf(Build.VERSION.SDK_INT < Build.VERSION_CODES.S) }
     var isError by remember(imageUrl) { mutableStateOf(false) }
 
     Box(modifier = modifier) {
@@ -50,66 +55,44 @@ fun BlurredImage(
                     .background(MaterialTheme.colorScheme.surfaceContainerLow)
             )
 
+        } else if (useLegacyBlur) {
+
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .transformations(LegacyBlurTransformation(context = context, radius = 18f))
+                    .build(),
+                contentDescription = contentDescription,
+                modifier = Modifier.fillMaxSize().graphicsLayer { scaleX = zoom; scaleY = zoom },
+                contentScale = ContentScale.Crop,
+                onError = { isError = true }
+            )
+
         } else {
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-
-                val density = LocalDensity.current
-
-                val blurEffect = remember(blurRadius) {
-
-                    val blurRadiusPx = with(density) { blurRadius.toPx() }
-
-                    RenderEffect.createBlurEffect(
-                        blurRadiusPx,
-                        blurRadiusPx,
-                        Shader.TileMode.MIRROR
-                    ).asComposeRenderEffect()
-
-                }
-
-                AsyncImage(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        try {
+                            val blurPx = with(density) { blurRadius.toPx() }
+                            if (blurPx > 0f) {
+                                renderEffect = RenderEffect.createBlurEffect(
+                                    blurPx, blurPx, Shader.TileMode.MIRROR
+                                ).asComposeRenderEffect()
+                            }
                             scaleX = zoom
                             scaleY = zoom
-                            renderEffect = blurEffect
                             clip = true
-                        },
-                    contentScale = ContentScale.Crop,
-                    model = imageUrl,
-                    contentDescription = contentDescription,
-                    onError = { isError = true }
-                )
-
-            } else {
-
-                val imageRequest = ImageRequest.Builder(context)
-                    .data(imageUrl)
-                    .transformations(
-                        LegacyBlurTransformation(
-                            context = context,
-                            radius = 18f,
-                            sampling = 6,
-                        )
-                    )
-                    .build()
-
-                AsyncImage(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = zoom
-                            scaleY = zoom
-                        },
-                    contentScale = ContentScale.Crop,
-                    model = imageRequest,
-                    contentDescription = contentDescription,
-                    onError = { isError = true }
-                )
-
-            }
+                        } catch (e: Exception) {
+                            useLegacyBlur = true
+                        }
+                    },
+                onError = { isError = true }
+            )
 
         }
 

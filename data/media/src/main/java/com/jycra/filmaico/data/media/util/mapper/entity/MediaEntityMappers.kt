@@ -2,7 +2,7 @@ package com.jycra.filmaico.data.media.util.mapper.entity
 
 import com.jycra.filmaico.data.media.entity.MediaEntity
 import com.jycra.filmaico.data.media.util.mapper.dto.toDomain
-import com.jycra.filmaico.domain.common.content.model.ContentStatus
+import com.jycra.filmaico.domain.media.model.ContentStatus
 import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.model.MediaSeason
 import com.jycra.filmaico.domain.media.model.MediaType

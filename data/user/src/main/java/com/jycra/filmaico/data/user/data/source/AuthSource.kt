@@ -14,6 +14,9 @@ import com.jycra.filmaico.domain.user.error.AuthError
 import com.jycra.filmaico.domain.user.util.AuthResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -25,6 +28,19 @@ class AuthSource @Inject constructor(
 ) {
 
     fun getCurrentUser(): FirebaseUser? = auth.currentUser
+
+    fun getActiveSessionId(): Flow<String?> = callbackFlow {
+
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            trySend(auth.currentUser?.uid)
+        }
+
+        auth.addAuthStateListener(listener)
+        awaitClose {
+            auth.removeAuthStateListener(listener)
+        }
+
+    }
 
     suspend fun signUpWithEmail(
         email: String,

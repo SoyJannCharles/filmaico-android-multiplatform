@@ -65,7 +65,7 @@ dependencies {
     implementation(project(":data:history"))
     implementation(project(":data:media"))
 
-    implementation(project(":domain:common"))
+    implementation(project(":domain:network"))
     implementation(project(":domain:media"))
 
 }

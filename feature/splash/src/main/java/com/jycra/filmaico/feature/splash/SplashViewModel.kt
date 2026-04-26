@@ -3,7 +3,6 @@ package com.jycra.filmaico.feature.splash
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jycra.filmaico.core.config.ConfigSource
-import com.jycra.filmaico.domain.user.usecase.GetCurrentUserUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +14,6 @@ import javax.inject.Inject
 @HiltViewModel
 class SplashViewModel @Inject constructor(
     private val configSource: ConfigSource,
-    private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val appVersionCode: Long,
     private val appVersionName: String
 ) : ViewModel() {
@@ -27,52 +25,25 @@ class SplashViewModel @Inject constructor(
     val effect = _effect.receiveAsFlow()
 
     init {
-        initializeApplication()
+        checkAppHealth()
     }
 
-    private fun initializeApplication() {
-
+    private fun checkAppHealth() {
         viewModelScope.launch {
-
             try {
-                validateAppVersion()
+                val serverVersionCode = configSource.getAppVersionCode()
+                if (appVersionCode < serverVersionCode) {
+                    _uiState.value = SplashUiState.UpdateRequired(
+                        currentVersion = appVersionName,
+                        serverVersion = configSource.getAppVersionName()
+                    )
+                } else {
+                    _uiState.value = SplashUiState.ReadyToCheckSession
+                }
             } catch (e: Exception) {
-                _uiState.value = SplashUiState.Error("Error al conectar con el servidor")
+                _uiState.value = SplashUiState.Error("Error de conexión")
             }
-
         }
-
-    }
-
-    private suspend fun validateAppVersion() {
-
-        val serverVersionCode = configSource.getAppVersionCode()
-        val isUpdateRequired = appVersionCode < serverVersionCode
-
-        if (isUpdateRequired) {
-            _uiState.value = SplashUiState.UpdateRequired(
-                currentVersion = appVersionName,
-                serverVersion = configSource.getAppVersionName()
-            )
-            return
-        }
-
-        validateUserSession()
-
-    }
-
-    private suspend fun validateUserSession() {
-
-        val user = getCurrentUserUseCase()
-
-        val effect = when {
-            user == null -> SplashUiEffect.NavigateToAuth
-            user.subscription?.isActive() ?: false -> SplashUiEffect.NavigateToMain
-            else -> SplashUiEffect.NavigateToSubscription
-        }
-
-        _effect.send(effect)
-
     }
 
 }

@@ -9,6 +9,5 @@ android {
 dependencies {
     implementation(project(":core:device"))
     implementation(project(":core:ui"))
-    implementation(project(":domain:common"))
     implementation(project(":domain:media"))
 }

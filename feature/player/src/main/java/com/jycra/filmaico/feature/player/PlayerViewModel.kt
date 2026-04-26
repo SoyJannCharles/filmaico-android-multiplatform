@@ -175,7 +175,7 @@ class PlayerViewModel @Inject constructor(
         }
 
         val source = filteredSources[currentSourceIndex]
-        val sourceName = source.provider
+        val sourceName = source.provider ?: "Fuente #$currentSourceIndex"
 
         viewModelScope.launch {
 
@@ -618,7 +618,7 @@ class PlayerViewModel @Inject constructor(
 
     private fun extractUniqueAudioMetadata(sources: List<Stream>): List<AudioMetadata> {
         return sources.map {
-            AudioMetadata(code = it.audio ?: "Original", subtitleCode = it.subtitle)
+            AudioMetadata(code = it.audio, subtitleCode = it.subtitle)
         }.distinct()
     }
 
@@ -627,7 +627,7 @@ class PlayerViewModel @Inject constructor(
         currentStream: Stream?
     ): AudioMetadata? {
         return audioList.find {
-            it.code == (currentStream?.audio ?: "Original") && it.subtitleCode == currentStream?.subtitle
+            it.code == (currentStream?.audio) && it.subtitleCode == currentStream?.subtitle
         } ?: audioList.firstOrNull()
     }
 

@@ -4,12 +4,12 @@ import android.annotation.SuppressLint
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.jycra.filmaico.core.config.ConfigSource
-import com.jycra.filmaico.core.network.ConnectivityObserver
 import com.jycra.filmaico.core.network.NetworkConnectivityObserver
 import com.jycra.filmaico.core.network.StreamNetworkSource
 import com.jycra.filmaico.core.network.api.StreamApi
 import com.jycra.filmaico.core.network.cookies.AppCookieJar
 import com.jycra.filmaico.data.stream.data.service.StreamService
+import com.jycra.filmaico.domain.network.ConnectivityObserver
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -129,7 +129,7 @@ abstract class NetworkModule {
         @Singleton
         fun provideLoggingInterceptor(): HttpLoggingInterceptor {
             return HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY // Para ver todo el detalle en debug
+                level = HttpLoggingInterceptor.Level.BODY
             }
         }
 

@@ -12,8 +12,7 @@ android {
 
 dependencies {
     implementation(project(":core:device"))
-    implementation(project(":core:network"))
-    implementation(project(":domain:common"))
+    implementation(project(":domain:network"))
     implementation(project(":domain:media"))
     implementation(project(":domain:user"))
 }

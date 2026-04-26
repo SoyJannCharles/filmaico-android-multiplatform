@@ -1,5 +1,4 @@
 import extensions.addCoroutines
-import extensions.addGson
 
 plugins {
     id("filmaico.android.jvm.inject")
@@ -20,4 +19,3 @@ dependencies {
 }
 
 addCoroutines()
-addGson()

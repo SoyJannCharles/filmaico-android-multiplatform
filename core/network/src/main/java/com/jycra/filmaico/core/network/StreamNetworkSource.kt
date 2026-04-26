@@ -76,6 +76,8 @@ class StreamNetworkSource @Inject constructor(
                     webView = runWebViewFallback(iframeUrl, this@callbackFlow)
                 }
 
+            } catch (e: IOException) {
+                Log.e("NetworkError", "Error capturado: ${e.message}")
             } catch (e: CancellationException) {
                 Log.d("StreamNetworkSource", "Cancelado scraping")
             }

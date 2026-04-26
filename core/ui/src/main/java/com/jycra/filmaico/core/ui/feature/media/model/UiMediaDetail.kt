@@ -1,7 +1,7 @@
 package com.jycra.filmaico.core.ui.feature.media.model
 
 import com.jycra.filmaico.core.ui.feature.media.model.UiMediaSeason
-import com.jycra.filmaico.domain.common.content.model.ContentStatus
+import com.jycra.filmaico.domain.media.model.ContentStatus
 import com.jycra.filmaico.domain.media.model.MediaType
 
 data class UiMediaDetail(

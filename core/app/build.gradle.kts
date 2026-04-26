@@ -10,8 +10,9 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:network"))
+    implementation(project(":core:config"))
     implementation(project(":data:user"))
+    implementation(project(":domain:network"))
 }
 
 addGson()

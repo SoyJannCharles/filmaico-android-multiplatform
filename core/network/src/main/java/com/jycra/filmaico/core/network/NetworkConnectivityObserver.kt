@@ -6,6 +6,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import com.jycra.filmaico.domain.network.ConnectivityObserver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -46,23 +47,31 @@ class NetworkConnectivityObserver @Inject constructor(
                 }
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                connectivityManager.registerDefaultNetworkCallback(callback)
-            } else {
-                val request = NetworkRequest.Builder()
-                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    .build()
-                connectivityManager.registerNetworkCallback(request, callback)
-            }
+            val request = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                .build()
 
-            if (isConnected()) {
-                trySend(ConnectivityObserver.Status.Available)
-            } else {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    connectivityManager.registerDefaultNetworkCallback(callback)
+                } else {
+                    connectivityManager.registerNetworkCallback(request, callback)
+                }
+            } catch (e: NoSuchMethodError) {
+                connectivityManager.registerNetworkCallback(request, callback)
+            } catch (e: Exception) {
                 trySend(ConnectivityObserver.Status.Unavailable)
             }
 
+            trySend(if (isConnected()) ConnectivityObserver.Status.Available else ConnectivityObserver.Status.Unavailable)
+
             awaitClose {
-                connectivityManager.unregisterNetworkCallback(callback)
+                try {
+                    connectivityManager.unregisterNetworkCallback(callback)
+                } catch (e: Exception) {
+
+                }
             }
 
         }.distinctUntilChanged()

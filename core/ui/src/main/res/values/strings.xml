@@ -92,7 +92,9 @@
 
     <string name="subscription_expired">Expired</string>
     <string name="subscription_mins">%1$d min</string>
-    <string name="subscription_hours">%1$d hs</string>
+    <string name="subscription_hour">%1 hour</string>
+    <string name="subscription_hours">%1$d hours</string>
+    <string name="subscription_day">%1 day</string>
     <string name="subscription_days">%1$d days</string>
     <string name="subscription_month">1 month</string>
     <string name="subscription_months">%1$d months</string>

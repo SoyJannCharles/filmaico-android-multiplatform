@@ -122,7 +122,7 @@ private fun PayScreenMobile(
                 Spacer(modifier = Modifier.height(48.dp))
 
                 InfoGroup {
-                    InfoRow(label = "CBU", value = "0000168300000019511096", copyable = true)
+                    InfoRow(label = "CBU", value = "0270512520061387620023", copyable = true)
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceBright)
                     InfoRow(label = "Alias", value = "filmaico.app", copyable = true)
                 }

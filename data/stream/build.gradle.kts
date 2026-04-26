@@ -15,7 +15,6 @@ dependencies {
     implementation(project(":core:config"))
     implementation(project(":core:security"))
     implementation(project(":core:model"))
-    implementation(project(":domain:common"))
     implementation(project(":domain:stream"))
     implementation(project(":domain:media"))
 }
