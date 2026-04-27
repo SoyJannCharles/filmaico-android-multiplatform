@@ -836,7 +836,18 @@ class PlayerViewModel @Inject constructor(
                     player.play()
 
                 } else {
-                    _uiState.update { PlayerUiState.Error("Fallo de conexión. Verifica tu internet y vuelve a intentar.") }
+                    //_uiState.update { PlayerUiState.Error("Fallo de conexión. Verifica tu internet y vuelve a intentar.") }
+                    _uiState.update { currentState ->
+                        if (currentState is PlayerUiState.Success) {
+                            PlayerUiState.Loading("Fuente caída. Buscando alternativa...")
+                        } else currentState
+                    }
+
+                    rawMetadata?.let { metadata ->
+                        playNextSource(metadata)
+                    } ?: run {
+                        _uiState.update { PlayerUiState.Error("Fallo crítico: No hay más fuentes disponibles.") }
+                    }
                 }
 
             }

@@ -22,7 +22,9 @@ data class AudioMetadata(
             val cleanCode = code.replace("-r", "-")
 
             val locale = Locale.forLanguageTag(cleanCode)
-            return locale.getDisplayLanguage(Locale.getDefault())
+            val displayName = locale.getDisplayName(Locale.getDefault())
+
+            return displayName
                 .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
                 .ifBlank { code }
 

@@ -3,7 +3,6 @@ package com.jycra.filmaico.core.network
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
-import java.net.URI
 import javax.inject.Inject
 
 class StreamExtractionEngine @Inject constructor(
@@ -22,17 +21,9 @@ class StreamExtractionEngine @Inject constructor(
 
             ensureActive()
 
-            val uri = URI(url)
-            val predictedJsUrl = "${uri.scheme}://${uri.host}/main.js"
-
             val deferredHtml = async {
                 ensureActive()
                 httpFetcher.getHtml(url)
-            }
-
-            val deferredPredictedJs = async {
-                ensureActive()
-                httpFetcher.getJs(predictedJsUrl)
             }
 
             val html = deferredHtml.await()
@@ -42,22 +33,16 @@ class StreamExtractionEngine @Inject constructor(
             if (html == null) return@coroutineScope null
 
             evalProcessor.extractM3U8(html)?.let {
-                deferredPredictedJs.cancel()
                 return@coroutineScope it
             }
 
-            val videoId = HtmlParser.extractVideoId(url)
             val scripts = HtmlParser.extractScripts(html, url)
 
             for (scriptUrl in scripts) {
 
                 ensureActive()
 
-                val jsCode = if (scriptUrl.contains("main.js")) {
-                    deferredPredictedJs.await() ?: httpFetcher.getJs(scriptUrl)
-                } else {
-                    httpFetcher.getJs(scriptUrl)
-                }
+                val jsCode = httpFetcher.getJs(scriptUrl)
 
                 ensureActive()
 
@@ -71,7 +56,7 @@ class StreamExtractionEngine @Inject constructor(
 
                 if (resolved.isEmpty()) continue
 
-                val rebuilt = HtmlParser.rebuildUrl(resolved, videoId)
+                val rebuilt = HtmlParser.resolveTargetUrl(resolved, url)
 
                 return@coroutineScope extract(rebuilt, depth + 1)
 

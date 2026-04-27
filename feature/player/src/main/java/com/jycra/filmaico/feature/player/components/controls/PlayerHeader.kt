@@ -63,9 +63,22 @@ fun PlayerHeader(
                     fontWeight = FontWeight.Bold
                 )
 
+            } else {
+
+                Text(
+                    text = "Epísodio ${metadata.order}",
+                    style = if (platform == Platform.MOBILE) {
+                        MaterialTheme.typography.titleMedium
+                    } else {
+                        MaterialTheme.typography.titleLarge
+                    },
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+
             }
 
-            if (!metadata.isLive) {
+            if (!metadata.isLive && metadata.order > 0) {
 
                 Text(
                     text = "Epísodio ${metadata.order}",

@@ -79,14 +79,15 @@ class JsResolver @Inject constructor(
                 val runner = """
                     (function() {
                         try {
-                            $jsContent
-                            if (typeof finalURL !== 'undefined' && finalURL !== "") {
-                                AndroidBridge.onUrlResolved(finalURL);
-                            } else {
-                                setTimeout(function() {
-                                    AndroidBridge.onUrlResolved(typeof finalURL !== 'undefined' ? finalURL : "");
-                                }, 50);
-                            }
+                        
+                            $jsContent 
+                            
+                            var result = "";
+                            if (typeof finalURL !== 'undefined') result = finalURL;
+                            else if (typeof destination !== 'undefined') result = destination;
+                            
+                            AndroidBridge.onUrlResolved(result);
+                            
                         } catch(e) { 
                             AndroidBridge.onUrlResolved(""); 
                         }
