@@ -28,12 +28,18 @@ class EdgeNodeRepositoryImpl @Inject constructor(
             return cachedHost
         }
 
-        val firebaseHost = source.getEdgeRoute(stableKey)
-        if (firebaseHost != null && isTokenValid(firebaseHost.url)) {
-            firebaseHost.url?.let { url ->
-                sessionCache[stableKey] = url
-                return url
+        source.getEdgeRoute(stableKey)?.let { firebaseRoute ->
+
+            if (isTokenValid(firebaseRoute.url)) {
+
+                if (prober.isHostAlive(firebaseRoute.url) && !firebaseRoute.url.isNullOrBlank()) {
+                    return firebaseRoute.url!!
+                } else {
+                    reportEdgeFailure(uri, firebaseRoute.url ?: "", "Firebase route dead")
+                }
+
             }
+
         }
 
         val originalHost = try {
@@ -44,15 +50,22 @@ class EdgeNodeRepositoryImpl @Inject constructor(
 
         val rawCandidates = service.fetchCandidates(stableKey, hostStore.getExcludedHosts())
 
-        if (rawCandidates.isEmpty()) {
-            return originalHost
+        if (rawCandidates.isNotEmpty()) {
+
+            val preferredHosts = hostStore.getPreferredHosts()
+            val sortedCandidates = prioritizeCandidates(rawCandidates, preferredHosts)
+
+            val aliveCandidates = prober.sortByLatency(sortedCandidates)
+            val winner = aliveCandidates.firstOrNull()
+
+            if (winner != null) {
+                sessionCache[stableKey] = winner
+                return winner
+            }
+
         }
 
-        val preferredHosts = hostStore.getPreferredHosts()
-        val sortedCandidates = prioritizeCandidates(rawCandidates, preferredHosts)
-        val aliveCandidates = prober.sortByLatency(sortedCandidates)
-
-        return aliveCandidates.firstOrNull() ?: originalHost
+        return originalHost
 
     }
 
@@ -90,6 +103,8 @@ class EdgeNodeRepositoryImpl @Inject constructor(
         sessionCache.remove(stableKey)
 
         hostStore.recordFailure(failedHost)
+
+        source.reportEdgeFailure(stableKey, failedHost, reason)
 
     }
 

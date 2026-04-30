@@ -18,8 +18,31 @@ class EdgeLatencyProberImpl @Inject constructor(
 ) : EdgeLatencyProber {
 
     private val cache = ConcurrentHashMap<String, CachedRtt>()
-    private val CACHE_TTL_MS = 30_000L // 30 segundos
+    private val CACHE_TTL_MS = 30_000L
     private val TOTAL_TIMEOUT_MS = 2200L
+
+    override suspend fun isHostAlive(url: String?): Boolean {
+
+        if (url.isNullOrBlank()) return false
+
+        return withContext(Dispatchers.IO) {
+            try {
+
+                val request = Request.Builder()
+                    .url(url)
+                    .head()
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    response.isSuccessful
+                }
+
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+    }
 
     override suspend fun sortByLatency(candidates: List<String>): List<String> {
 

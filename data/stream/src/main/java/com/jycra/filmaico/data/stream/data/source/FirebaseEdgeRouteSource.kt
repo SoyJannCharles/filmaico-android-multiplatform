@@ -57,4 +57,23 @@ class FirebaseEdgeRouteSource @Inject constructor(
 
     }
 
+    override suspend fun reportEdgeFailure(
+        stableKey: String,
+        failedHost: String,
+        reason: String
+    ) {
+
+        val safeId = stableKey
+            .replace("/", "_")
+            .replace(".", "_")
+
+        try {
+            edgeCollection.document(safeId).delete().await()
+            Log.d("FirebaseEdge", "🗑️ Ruta eliminada de Firebase por fallo: $safeId")
+        } catch (e: Exception) {
+            Log.e("FirebaseEdge", "Error al limpiar ruta fallida en Firebase: ${e.message}")
+        }
+
+    }
+
 }
