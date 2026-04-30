@@ -175,27 +175,6 @@ class AuthRepositoryImpl @Inject constructor(
         )?.subscription?.isActive() == true
     }
 
-    override fun observeSubscriptionStatus(): Flow<Boolean> {
-
-        val uid = authSource.getCurrentUser()?.uid ?: return flowOf(false)
-        val userReference = userSource.getUserReference(uid)
-
-        return userReference.snapshots().map { documentSnapshot ->
-
-            val userDto = documentSnapshot.toObject<UserDto>()
-
-            val isActive = userDto?.subscription?.isActive() == true
-
-            isActive
-
-        }
-            .distinctUntilChanged()
-            .catch { e ->
-                emit(false)
-            }
-
-    }
-
     override suspend fun registerDeviceSession(): AuthResult<Unit, AuthError> {
 
         val uid = authSource.getCurrentUser()?.uid

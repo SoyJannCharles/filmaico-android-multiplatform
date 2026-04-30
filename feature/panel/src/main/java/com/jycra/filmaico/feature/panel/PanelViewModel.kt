@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jycra.filmaico.core.app.AppHealth
 import com.jycra.filmaico.core.app.SessionManager
 import com.jycra.filmaico.core.ui.feature.panel.util.toUiPanel
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
@@ -35,12 +36,20 @@ class PanelViewModel @Inject constructor(
 
     val uiState: StateFlow<AccountUiState> = combine(
         sessionManager.sessionStatus,
+        sessionManager.appHealth,
         _localState
-    ) { status, local ->
+    ) { status, health, local ->
         when (status) {
             is SessionStatus.Authenticated -> {
+
+                val versionToShow = when (health) {
+                    is AppHealth.UpdateRequired -> health.current
+                    is AppHealth.Ready -> health.version
+                    else -> "..."
+                }
+
                 AccountUiState.Success(
-                    uiPanel = status.user.toUiPanel(),
+                    uiPanel = status.user.toUiPanel(versionToShow),
                     selectedSection = local.selectedSection,
                     linkingCode = local.linkingCode,
                     isLinking = local.isLinking,

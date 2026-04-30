@@ -1,6 +1,7 @@
 package com.jycra.filmaico.tv
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import androidx.tv.material3.ExperimentalTvMaterial3Api
+import com.jycra.filmaico.core.app.AppHealth
 import com.jycra.filmaico.core.app.AppViewModel
 import com.jycra.filmaico.core.navigation.route.AppRoutes
 import com.jycra.filmaico.core.ui.component.banner.NetworkStatusBanner
@@ -46,41 +48,73 @@ class TvMainActivity : ComponentActivity() {
 
             val navController = rememberNavController()
 
+            val appHealth by mainViewModel.appHealth.collectAsStateWithLifecycle()
+
             val sessionStatus by mainViewModel.sessionStatus.collectAsStateWithLifecycle()
             val isSubActive by mainViewModel.isSubscriptionActive.collectAsStateWithLifecycle()
 
             val networkStatus by mainViewModel.networkStatus.collectAsStateWithLifecycle()
 
-            LaunchedEffect(sessionStatus, isSubActive) {
+            LaunchedEffect(appHealth, sessionStatus, isSubActive) {
+
                 val currentRoute = navController.currentBackStackEntry?.destination?.route
-                val status = sessionStatus
 
-                when (status) {
+                when (val health = appHealth) {
 
-                    is SessionStatus.Authenticated -> {
-
-                        val destination = if (isSubActive) AppRoutes.MAIN else AppRoutes.SUBSCRIPTION
-
-                        if (currentRoute == AppRoutes.SIGN_IN || currentRoute == AppRoutes.SPLASH) {
-                            navController.navigate(destination) { popUpTo(0) { inclusive = true } }
-                        } else if (!isSubActive && currentRoute != AppRoutes.SUBSCRIPTION) {
-                            navController.navigate(AppRoutes.SUBSCRIPTION) {
-                                popUpTo(AppRoutes.MAIN) { inclusive = true }
-                            }
-                        }
-
-                    }
-
-                    is SessionStatus.Unauthenticated, SessionStatus.MissedDocument -> {
-                        if (currentRoute != AppRoutes.SIGN_IN && currentRoute != AppRoutes.SPLASH) {
-                            navController.navigate(AppRoutes.SIGN_IN) {
+                    is AppHealth.UpdateRequired -> {
+                        if (currentRoute != AppRoutes.UPDATE) {
+                            navController.navigate(AppRoutes.UPDATE) {
                                 popUpTo(0) { inclusive = true }
                             }
                         }
+                        return@LaunchedEffect
                     }
 
-                    is SessionStatus.Checking -> {
+                    is AppHealth.Error -> {}
+
+                    is AppHealth.Ready -> {
+
+                        when (val status = sessionStatus) {
+
+                            is SessionStatus.Authenticated -> {
+
+                                val destination =
+                                    if (isSubActive) AppRoutes.MAIN else AppRoutes.SUBSCRIPTION
+
+                                if (
+                                    currentRoute == AppRoutes.SPLASH ||
+                                    currentRoute == AppRoutes.UPDATE ||
+                                    currentRoute == AppRoutes.SIGN_IN ||
+                                    currentRoute == AppRoutes.SUBSCRIPTION
+                                ) {
+                                    navController.navigate(destination) {
+                                        popUpTo(0) {
+                                            inclusive = true
+                                        }
+                                    }
+                                } else if (!isSubActive) {
+                                    navController.navigate(AppRoutes.SUBSCRIPTION) {
+                                        popUpTo(AppRoutes.MAIN) { inclusive = true }
+                                    }
+                                }
+
+                            }
+
+                            is SessionStatus.Unauthenticated, SessionStatus.MissedDocument -> {
+                                if (currentRoute != AppRoutes.SIGN_IN) {
+                                    navController.navigate(AppRoutes.SIGN_IN) {
+                                        popUpTo(AppRoutes.SPLASH) { inclusive = true }
+                                    }
+                                }
+                            }
+
+                            is SessionStatus.Checking -> {}
+
+                        }
+
                     }
+
+                    AppHealth.Checking -> {}
 
                 }
 

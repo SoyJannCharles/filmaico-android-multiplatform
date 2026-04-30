@@ -11,6 +11,7 @@ android {
 
 dependencies {
     implementation(project(":data:user"))
+    implementation(project(":data:media"))
     implementation(project(":data:stream"))
 }
 

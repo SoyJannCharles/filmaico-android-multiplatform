@@ -13,8 +13,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:network"))
-    implementation(project(":core:model"))
+    implementation(project(":core:firebase"))
     implementation(project(":domain:stream"))
     implementation(project(":domain:media"))
 }

@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.ui.R
+import com.jycra.filmaico.core.ui.component.FilmaicoLogo
 import com.jycra.filmaico.core.ui.feature.panel.PanelCard
 import com.jycra.filmaico.core.ui.feature.panel.model.PanelSection
 import com.jycra.filmaico.core.ui.feature.panel.model.UiPanel
@@ -150,7 +151,7 @@ private fun Screen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp),
+                                .padding(vertical = 12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
 
@@ -162,51 +163,49 @@ private fun Screen(
 
                             Text(
                                 text = "Pídele a tu amigo o familiar el código de 6 dígitos de su dispositivo para vincularlo a tu cuenta sin compartir tu contraseña.",
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                             )
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                                OutlinedTextField(
-                                    value = linkingCode,
-                                    onValueChange = {
-                                        if (it.length <= 6) onLinkingCodeChange(it.uppercase())
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    placeholder = { Text("Ej: XJ79K2") },
-                                    singleLine = true,
-                                    shape = RoundedCornerShape(12.dp),
-                                    textStyle = TextStyle(
-                                        fontFamily = FontFamily.Monospace,
-                                        letterSpacing = 2.sp,
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    keyboardOptions = KeyboardOptions(
-                                        capitalization = KeyboardCapitalization.Characters,
-                                        autoCorrect = false
-                                    )
+                            OutlinedTextField(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                value = linkingCode,
+                                onValueChange = {
+                                    if (it.length <= 6) onLinkingCodeChange(it.uppercase())
+                                },
+                                placeholder = { Text("Ej: XJ79K2") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
+                                textStyle = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    letterSpacing = 2.sp,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                keyboardOptions = KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.Characters,
+                                    autoCorrect = false
                                 )
+                            )
 
-                                Button(
-                                    onClick = { onLinkDevice() },
-                                    enabled = linkingCode.length == 6 && !isLinking,
-                                    shape = RoundedCornerShape(12.dp),
-                                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
-                                ) {
-                                    if (isLinking) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(20.dp),
-                                            strokeWidth = 2.dp,
-                                            color = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                    } else {
-                                        Text("Vincular")
-                                    }
+                            Button(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                                enabled = linkingCode.length == 6 && !isLinking,
+                                shape = RoundedCornerShape(8.dp),
+                                onClick = { onLinkDevice() },
+                            ) {
+                                if (isLinking) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                } else {
+                                    Text("Vincular")
                                 }
                             }
 
@@ -245,18 +244,44 @@ private fun Screen(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     Button(
                         onClick = { onSignOut() },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
                             contentColor = MaterialTheme.colorScheme.onErrorContainer
                         ),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(text = stringResource(R.string.account_signout_title), fontWeight = FontWeight.SemiBold)
                     }
+
+                }
+
+                item {
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+
+                        FilmaicoLogo()
+
+                        Text(
+                            text = uiPanel.appVersion,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+
+                    }
+
                 }
 
             }

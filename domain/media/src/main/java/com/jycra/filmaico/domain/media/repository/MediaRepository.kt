@@ -1,5 +1,6 @@
 package com.jycra.filmaico.domain.media.repository
 
+import com.jycra.filmaico.domain.media.model.Epg
 import com.jycra.filmaico.domain.media.model.metadata.PlaybackNavigation
 import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.model.MediaCarousel
@@ -11,6 +12,8 @@ interface MediaRepository {
     suspend fun syncMetadataSnapshot(mediaType: MediaType)
     suspend fun syncMetadataRealtime(mediaType: MediaType)
     suspend fun syncMediaContent(containerId: String, mediaType: MediaType)
+
+    suspend fun syncEpg()
 
     suspend fun searchAllMedia(query: String): Map<MediaType, List<Media>>
 
@@ -25,6 +28,8 @@ interface MediaRepository {
     suspend fun getSiblingsForAsset(currentId: String, seasonId: String): Pair<String?, String?>
 
     suspend fun getAssetById(assetId: String, mediaType: MediaType): Media.Asset?
+
+    suspend fun getCurrentEpgSnapshot(currentTime: Long): List<Epg>
 
     suspend fun getPlaybackNavigation(
         ownerId: String,

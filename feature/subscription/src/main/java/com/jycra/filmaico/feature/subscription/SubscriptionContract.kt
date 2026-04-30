@@ -25,5 +25,4 @@ sealed interface SubscriptionUiEvent {
 
 sealed interface SubscriptionUiEffect {
     object NavigateToAuth : SubscriptionUiEffect
-    object NavigateToMain : SubscriptionUiEffect
 }

@@ -4,6 +4,10 @@ import jakarta.inject.Qualifier
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
+annotation class ProbeHttpClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
 annotation class XAuthHttpClient
 
 @Qualifier

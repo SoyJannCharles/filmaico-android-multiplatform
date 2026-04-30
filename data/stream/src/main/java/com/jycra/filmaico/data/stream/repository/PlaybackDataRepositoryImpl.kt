@@ -14,6 +14,7 @@ import com.jycra.filmaico.data.stream.entity.StreamCacheEntity
 import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.model.stream.DrmKeys
 import com.jycra.filmaico.domain.media.model.stream.Key
+import com.jycra.filmaico.domain.stream.repository.EdgeNodeRepository
 import com.jycra.filmaico.domain.stream.repository.PlaybackDataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -22,11 +23,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.net.toUri
+import com.jycra.filmaico.data.stream.util.FlowUrlResolver
 
 @Singleton
 class PlaybackDataRepositoryImpl @Inject constructor(
     private val configSource: ConfigSource,
     private val decryptionManager: DecryptionManager,
+    private val edgeNodeRepository: EdgeNodeRepository,
+    private val flowUrlResolver: FlowUrlResolver,
     private val streamService: StreamService,
     private val streamCacheDao: StreamCacheDao,
     private val streamManifestCache: StreamManifestCache,
@@ -56,10 +61,38 @@ class PlaybackDataRepositoryImpl @Inject constructor(
             return@withContext uri
         }
 
+        val cachedOrPoolUrl = edgeNodeRepository.getOptimalEdgeHost(uri)
+
+        if (cachedOrPoolUrl != uri && cachedOrPoolUrl.contains("/tok_")) {
+            return@withContext cachedOrPoolUrl
+        }
+
+
         val jwt = getJwt(forceRefresh)
         val cdnToken = getCdnToken(uri, jwt)
 
-        "$uri?cdntoken=$cdnToken"
+        val urlWithTokenParam = "$uri?cdntoken=$cdnToken"
+
+        val defaultUa = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+        val extraHeaders = mapOf(
+            "Origin" to "https://portal.app.flow.com.ar",
+            "Referer" to "https://portal.app.flow.com.ar/"
+        )
+
+        // --- FASE 3: LA RESOLUCIÓN ---
+        // Nos disfrazamos de PC, seguimos el salto 302 y obtenemos la URL dorada
+        val finalResolvedUrl = flowUrlResolver.resolve(urlWithTokenParam, defaultUa, extraHeaders)
+
+        // --- FASE 4: SEMBRAR PARA EL FUTURO ---
+        // Si logramos resolver una URL nueva y exitosa, le avisamos al Repositorio.
+        if (finalResolvedUrl != urlWithTokenParam && finalResolvedUrl.contains("/tok_")) {
+            // Esta función (que tendrías que agregar a tu EdgeNodeRepository) guardaría
+            // la URL en tu caché local y llamaría al publishAsync del PHP.
+            //edgeNodeRepository.reportSuccessAndPublish(uri, finalResolvedUrl)
+        }
+
+        // Le entregamos el resultado final a ExoPlayer
+        return@withContext finalResolvedUrl
 
     }
 

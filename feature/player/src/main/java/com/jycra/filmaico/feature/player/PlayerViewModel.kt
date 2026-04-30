@@ -25,6 +25,7 @@ import com.jycra.filmaico.domain.media.model.stream.Stream
 import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
 import com.jycra.filmaico.domain.media.usecase.ToggleSaveStatusUseCase
 import com.jycra.filmaico.domain.stream.usecase.AnalyzeProviderUseCase
+import com.jycra.filmaico.domain.stream.usecase.ReportSuccessfulPlaybackUseCase
 import com.jycra.filmaico.domain.stream.util.StreamExtractionState
 import com.jycra.filmaico.feature.player.components.settings.SettingsMenuState
 import com.jycra.filmaico.shared.managers.StreamPreloadManager
@@ -51,6 +52,7 @@ import javax.inject.Inject
 class PlayerViewModel @Inject constructor(
     private val streamPreloadManager: StreamPreloadManager,
     private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
+    private val reportSuccessfulPlaybackUseCase: ReportSuccessfulPlaybackUseCase,
     private val analyzeProviderUseCase: AnalyzeProviderUseCase,
     private val upsertMediaProgressUseCase: UpsertMediaProgressUseCase,
     private val toggleSaveStatusUseCase: ToggleSaveStatusUseCase,
@@ -76,7 +78,12 @@ class PlayerViewModel @Inject constructor(
     var playerView: TextureView? = null
 
     private var rawMetadata: PlayerMetadata? = null
+
     private var filteredSources: List<Stream> = emptyList()
+
+    private var currentOriginalUri: String? = null
+    private var currentResolvedUrl: String? = null
+
     private var currentSourceIndex = 0
     private var lastExecutionWasForced = false
 
@@ -200,6 +207,12 @@ class PlayerViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = { playbackData ->
+
+                    currentOriginalUri = when (source) {
+                        is Stream.Direct -> source.uri
+                        is Stream.WebViewScrap -> source.iframeUrl
+                    }
+                    currentResolvedUrl = playbackData.uri
 
                     val player = playerManager.exoPlayer
 
@@ -765,6 +778,15 @@ class PlayerViewModel @Inject constructor(
                 when (state) {
                     Player.STATE_READY -> {
                         if (_uiState.value !is PlayerUiState.Success) {
+
+                            val original = currentOriginalUri
+                            val resolved = currentResolvedUrl
+
+                            if (original != null && resolved != null) {
+                                viewModelScope.launch {
+                                    reportSuccessfulPlaybackUseCase(original, resolved)
+                                }
+                            }
 
                             _uiState.update {
                                 PlayerUiState.Success(

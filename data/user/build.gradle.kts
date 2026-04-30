@@ -11,7 +11,7 @@ android {
 }
 
 dependencies {
-    api(project(":core:model"))
+    api(project(":core:firebase"))
     api(project(":domain:user"))
 }
 

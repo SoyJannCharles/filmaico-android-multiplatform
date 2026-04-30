@@ -41,6 +41,7 @@ sealed interface Media {
         override val isSaved: Boolean = false,
         val ownerId: String?,
         val seasonId: String?,
+        val epgId: String? = null,
         val airDate: Long? = null,
         val duration: Long?,
         val number: Int?,

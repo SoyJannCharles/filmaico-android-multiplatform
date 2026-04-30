@@ -9,11 +9,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-fun User.toUiPanel(): UiPanel {
+fun User.toUiPanel(appVersion: String): UiPanel {
 
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
     return UiPanel(
+        appVersion = "Versión: $appVersion",
         email = this.email ?: "Sin correo registrado",
         subscriptionStatus = if (this.subscription?.isActive() ?: false) "Activa" else "Expirada",
         expirationDate = "Vence: ${dateFormatter.format(this.subscription?.expirationDate ?: Date())}",

@@ -11,8 +11,7 @@ import com.jycra.filmaico.core.device.Platform
 fun SubscriptionRoute(
     viewModel: SubscriptionViewModel = hiltViewModel(),
     platform: Platform,
-    onNavigateToAuth: () -> Unit,
-    onNavigateToMain: () -> Unit
+    onNavigateToAuth: () -> Unit
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -21,7 +20,6 @@ fun SubscriptionRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 SubscriptionUiEffect.NavigateToAuth -> onNavigateToAuth()
-                SubscriptionUiEffect.NavigateToMain -> onNavigateToMain()
             }
         }
     }

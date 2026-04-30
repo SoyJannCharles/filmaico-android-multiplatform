@@ -11,27 +11,24 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.jycra.filmaico.core.device.Platform
+import com.jycra.filmaico.core.navigation.detailRoute
+import com.jycra.filmaico.core.navigation.navigateToDetail
 import com.jycra.filmaico.core.navigation.route.AppRoutes
 import com.jycra.filmaico.core.ui.SystemUiController
 import com.jycra.filmaico.core.ui.component.dialog.ActionableDialog
 import com.jycra.filmaico.feature.main.mainRoute
-import com.jycra.filmaico.feature.main.navigateToMainFromSubscription
 import com.jycra.filmaico.feature.main.navigateToMainFromAuth
-import com.jycra.filmaico.feature.main.navigateToMainFromSplash
-import com.jycra.filmaico.core.navigation.detailRoute
-import com.jycra.filmaico.core.navigation.navigateToDetail
-import com.jycra.filmaico.feature.subscription.navigateToSubscriptionFromAuth
-import com.jycra.filmaico.feature.subscription.navigateToSubscriptionFromSignUp
-import com.jycra.filmaico.feature.subscription.navigateToSubscriptionFromSplash
-import com.jycra.filmaico.feature.subscription.subscriptionRoute
 import com.jycra.filmaico.feature.player.navigateToPlayer
 import com.jycra.filmaico.feature.player.playerRoute
-import com.jycra.filmaico.feature.signin.navigateToAuth
 import com.jycra.filmaico.feature.signin.navigateToAuthAfterCancel
 import com.jycra.filmaico.feature.signin.signInRoute
 import com.jycra.filmaico.feature.signup.navigateToSignUp
 import com.jycra.filmaico.feature.signup.signUpRoute
 import com.jycra.filmaico.feature.splash.splashRoute
+import com.jycra.filmaico.feature.subscription.navigateToSubscriptionFromAuth
+import com.jycra.filmaico.feature.subscription.navigateToSubscriptionFromSignUp
+import com.jycra.filmaico.feature.subscription.subscriptionRoute
+import com.jycra.filmaico.feature.update.updateRoute
 
 @Composable
 fun AppMobileNavHost(
@@ -60,17 +57,9 @@ fun AppMobileNavHost(
 
     NavHost(navController = navController, startDestination = AppRoutes.SPLASH) {
 
-        splashRoute(
-            onNavigateToAuth = {
-                navController.navigateToAuth()
-            },
-            onNavigateToSubscription = {
-                navController.navigateToSubscriptionFromSplash()
-            },
-            onNavigateToMain = {
-                navController.navigateToMainFromSplash()
-            }
-        )
+        splashRoute()
+
+        updateRoute()
 
         signInRoute(
             platform = Platform.MOBILE,
@@ -98,9 +87,6 @@ fun AppMobileNavHost(
             platform = Platform.MOBILE,
             onNavigateToAuth = {
                 navController.navigateToAuthAfterCancel()
-            },
-            onNavigateToMain = {
-                navController.navigateToMainFromSubscription()
             }
         )
 

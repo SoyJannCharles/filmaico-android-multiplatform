@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.jycra.filmaico.core.database.FilmaicoDatabase
 import com.jycra.filmaico.data.history.data.dao.MediaProgressDao
+import com.jycra.filmaico.data.media.data.dao.EpgDao
 import com.jycra.filmaico.data.media.data.dao.MediaDao
 import com.jycra.filmaico.data.stream.data.dao.StreamCacheDao
 import dagger.Module
@@ -36,6 +37,11 @@ object DatabaseModule {
     @Singleton
     fun provideMediaProgressDao(database: FilmaicoDatabase): MediaProgressDao =
         database.mediaProgressDao()
+
+    @Provides
+    @Singleton
+    fun provideEpgDao(database: FilmaicoDatabase): EpgDao =
+        database.epgDao()
 
     @Provides
     @Singleton

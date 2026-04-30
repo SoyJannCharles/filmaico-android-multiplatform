@@ -28,6 +28,7 @@ data class MediaEntity(
     val name: Map<String, String>,
     val synopsis: Map<String, String> = emptyMap(),
     val imageUrl: Map<String, String> = emptyMap(),
+    val epgId: String? = null,
     val isSaved: Boolean = false,
     val firstAirDate: Long? = null,
     val lastAirDate: Long? = null,

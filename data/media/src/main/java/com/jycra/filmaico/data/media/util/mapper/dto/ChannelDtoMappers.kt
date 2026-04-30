@@ -18,6 +18,7 @@ fun ChannelDto.toMappingResult(): MediaMappingResult {
         ownerId = null,
         name = this.name,
         imageUrl = mapOf("default" to this.iconUrl),
+        epgId = epgId,
         sources = this.sources
     )
 

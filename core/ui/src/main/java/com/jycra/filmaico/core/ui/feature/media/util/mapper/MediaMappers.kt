@@ -78,6 +78,7 @@ fun Media.toUiMedia(forcedVariant: MediaCardVariant? = null): UiMedia {
         name = name,
         label = label,
         imageUrl = this.localizedImageUrl,
+        epgId = (this as? Media.Asset)?.epgId,
         order = (this as? Media.Asset)?.number ?: 0,
         duration = (this as? Media.Asset)?.duration ?: 0,
         lastPosition = (this as? Media.Asset)?.lastPosition ?: 0,

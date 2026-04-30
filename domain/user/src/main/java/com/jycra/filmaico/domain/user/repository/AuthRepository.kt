@@ -22,7 +22,6 @@ interface AuthRepository {
     fun observeSessionStatus(): Flow<SessionStatus>
 
     suspend fun hasActiveSubscription(): Boolean
-    fun observeSubscriptionStatus(): Flow<Boolean>
 
     suspend fun registerDeviceSession(): AuthResult<Unit, AuthError>
 

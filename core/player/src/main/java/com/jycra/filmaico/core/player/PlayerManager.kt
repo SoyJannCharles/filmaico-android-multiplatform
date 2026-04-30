@@ -89,8 +89,6 @@ class PlayerManager @Inject constructor(
 
         val mediaItem = mediaItemBuilder.build()
 
-        Log.e("DRMKeys", "${playbackData.keys}")
-
         return if (isProgressive) {
             ProgressiveMediaSource.Factory(baseHttpDataSourceFactory)
                 .createMediaSource(mediaItem)

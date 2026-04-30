@@ -4,11 +4,21 @@ import android.annotation.SuppressLint
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.jycra.filmaico.core.config.ConfigSource
+import com.jycra.filmaico.core.network.EdgeNodeSource
+import com.jycra.filmaico.core.network.api.EpgApi
+import com.jycra.filmaico.core.network.EpgSource
 import com.jycra.filmaico.core.network.NetworkConnectivityObserver
-import com.jycra.filmaico.core.network.StreamNetworkSource
+import com.jycra.filmaico.core.network.StreamSource
+import com.jycra.filmaico.core.network.api.EdgeNodeApi
 import com.jycra.filmaico.core.network.api.StreamApi
 import com.jycra.filmaico.core.network.cookies.AppCookieJar
+import com.jycra.filmaico.core.network.util.EdgeLatencyProberImpl
+import com.jycra.filmaico.core.network.util.FlowUrlResolverImpl
+import com.jycra.filmaico.data.media.data.service.EpgService
+import com.jycra.filmaico.data.stream.data.service.EdgeNodeService
 import com.jycra.filmaico.data.stream.data.service.StreamService
+import com.jycra.filmaico.data.stream.util.EdgeLatencyProber
+import com.jycra.filmaico.data.stream.util.FlowUrlResolver
 import com.jycra.filmaico.domain.network.ConnectivityObserver
 import dagger.Binds
 import dagger.Module
@@ -36,8 +46,26 @@ abstract class NetworkModule {
     @Binds
     @Singleton
     abstract fun bindStreamService(
-        impl: StreamNetworkSource
+        impl: StreamSource
     ): StreamService
+
+    @Binds
+    @Singleton
+    abstract fun bindFlowUrlResolver(
+        impl: FlowUrlResolverImpl
+    ): FlowUrlResolver
+
+    @Binds
+    @Singleton
+    abstract fun bindEdgeNodeService(
+        impl: EdgeNodeSource
+    ): EdgeNodeService
+
+    @Binds
+    @Singleton
+    abstract fun bindEpgService(
+        impl: EpgSource
+    ): EpgService
 
     @Binds
     @Singleton
@@ -45,11 +73,35 @@ abstract class NetworkModule {
         impl: NetworkConnectivityObserver
     ): ConnectivityObserver
 
+    @Binds
+    @Singleton
+    abstract fun bindEdgeLatencyProber(
+        impl: EdgeLatencyProberImpl
+    ): EdgeLatencyProber
+
     companion object {
 
         @Provides
         @Singleton
         fun provideGson(): Gson = GsonBuilder().create()
+
+        @Provides
+        @Singleton
+        fun provideHttpClient(): OkHttpClient {
+            return OkHttpClient.Builder().build()
+        }
+
+        @Provides
+        @Singleton
+        @ProbeHttpClient
+        fun provideProbeOkHttpClient(): OkHttpClient {
+            return OkHttpClient.Builder()
+                .connectTimeout(1500, TimeUnit.MILLISECONDS)
+                .readTimeout(1500, TimeUnit.MILLISECONDS)
+                .callTimeout(2000, TimeUnit.MILLISECONDS)
+                .retryOnConnectionFailure(false)
+                .build()
+        }
 
         @Provides
         @Singleton
@@ -150,6 +202,18 @@ abstract class NetworkModule {
         @Singleton
         fun provideStreamApiService(retrofit: Retrofit): StreamApi {
             return retrofit.create(StreamApi::class.java)
+        }
+
+        @Provides
+        @Singleton
+        fun provideEdgeNodeApi(retrofit: Retrofit): EdgeNodeApi {
+            return retrofit.create(EdgeNodeApi::class.java)
+        }
+
+        @Provides
+        @Singleton
+        fun provideEpgApi(retrofit: Retrofit): EpgApi {
+            return retrofit.create(EpgApi::class.java)
         }
 
     }

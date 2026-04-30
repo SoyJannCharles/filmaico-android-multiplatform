@@ -1,0 +1,15 @@
+package com.jycra.filmaico.core.model.stream
+
+import androidx.annotation.Keep
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.IgnoreExtraProperties
+import com.google.firebase.firestore.ServerTimestamp
+
+@Keep
+@IgnoreExtraProperties
+data class EdgeRouteDto(
+    val url: String? = null,
+    val expiresAt: Timestamp? = null,
+    @ServerTimestamp
+    val lastUsed: Timestamp? = null
+)

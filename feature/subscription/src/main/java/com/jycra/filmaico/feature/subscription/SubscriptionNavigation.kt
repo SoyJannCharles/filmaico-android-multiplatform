@@ -8,23 +8,13 @@ import com.jycra.filmaico.core.navigation.route.AppRoutes
 
 fun NavGraphBuilder.subscriptionRoute(
     platform: Platform,
-    onNavigateToAuth: () -> Unit,
-    onNavigateToMain: () -> Unit
+    onNavigateToAuth: () -> Unit
 ) {
     composable(route = AppRoutes.SUBSCRIPTION) {
         SubscriptionRoute(
             platform = platform,
-            onNavigateToAuth = onNavigateToAuth,
-            onNavigateToMain = onNavigateToMain
+            onNavigateToAuth = onNavigateToAuth
         )
-    }
-}
-
-fun NavController.navigateToSubscriptionFromSplash() {
-    navigate(AppRoutes.SUBSCRIPTION) {
-        popUpTo(AppRoutes.SPLASH) {
-            inclusive = true
-        }
     }
 }
 

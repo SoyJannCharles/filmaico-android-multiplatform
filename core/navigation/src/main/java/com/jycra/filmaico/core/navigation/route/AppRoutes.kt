@@ -4,6 +4,8 @@ object AppRoutes {
 
     const val SPLASH = "splash"
 
+    const val UPDATE = "update"
+
     const val SIGN_UP = "signUp"
     const val SIGN_IN = "signIn"
 

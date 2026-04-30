@@ -22,12 +22,6 @@ abstract class FirebaseModule {
 
     companion object {
 
-        @Singleton
-        @Provides
-        @ApplicationScope
-        fun provideApplicationScope(): CoroutineScope =
-            CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
         @Provides
         @Singleton
         fun provideAuth(): FirebaseAuth {
@@ -51,5 +45,3 @@ abstract class FirebaseModule {
     }
 
 }
-
-annotation class ApplicationScope

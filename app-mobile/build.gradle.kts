@@ -41,6 +41,7 @@ android {
 dependencies {
 
     implementation(project(":feature:splash"))
+    implementation(project(":feature:update"))
     implementation(project(":feature:signup"))
     implementation(project(":feature:signin"))
     implementation(project(":feature:subscription"))

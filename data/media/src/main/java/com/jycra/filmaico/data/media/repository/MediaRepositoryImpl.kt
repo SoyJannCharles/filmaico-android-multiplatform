@@ -5,22 +5,29 @@ import com.jycra.filmaico.core.model.media.type.AnimeDto
 import com.jycra.filmaico.core.model.media.type.ChannelDto
 import com.jycra.filmaico.core.model.media.type.MovieDto
 import com.jycra.filmaico.core.model.media.type.SerieDto
-import com.jycra.filmaico.core.network.di.ApplicationScope
+import com.jycra.filmaico.data.media.data.dao.EpgDao
 import com.jycra.filmaico.data.media.data.dao.MediaDao
+import com.jycra.filmaico.data.media.data.service.EpgService
 import com.jycra.filmaico.data.media.data.service.MediaService
+import com.jycra.filmaico.data.media.data.store.EpgStore
+import com.jycra.filmaico.data.media.di.ApplicationScope
+import com.jycra.filmaico.data.media.entity.EpgEntity
 import com.jycra.filmaico.data.media.entity.MediaEntity
 import com.jycra.filmaico.data.media.entity.MediaSeasonEntity
 import com.jycra.filmaico.data.media.util.mapper.dto.toEntity
 import com.jycra.filmaico.data.media.util.mapper.dto.toMappingResult
 import com.jycra.filmaico.data.media.util.mapper.entity.toAsset
 import com.jycra.filmaico.data.media.util.mapper.entity.toDomain
+import com.jycra.filmaico.data.media.util.parseEpgDate
 import com.jycra.filmaico.domain.media.model.ContentStatus
+import com.jycra.filmaico.domain.media.model.Epg
 import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.model.MediaCarousel
 import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.model.metadata.PlaybackNavigation
 import com.jycra.filmaico.domain.media.repository.MediaRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -31,11 +38,19 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 class MediaRepositoryImpl @Inject constructor(
     private val mediaDao: MediaDao,
     private val mediaService: MediaService,
+    private val epgDao: EpgDao,
+    private val epgService: EpgService,
+    private val epgStore: EpgStore,
     @ApplicationScope private val serviceScope: CoroutineScope
 ) : MediaRepository {
 
@@ -181,6 +196,84 @@ class MediaRepositoryImpl @Inject constructor(
 
     }
 
+    override suspend fun syncEpg() {
+
+        val today = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
+        val lastSync = epgStore.getLastSyncDate()
+
+        if (lastSync == today) return
+
+        serviceScope.launch(Dispatchers.IO) {
+            try {
+
+                val xmlStream = epgService.getEpgXmlStream()
+
+                val factory = XmlPullParserFactory.newInstance()
+                val parser = factory.newPullParser()
+                parser.setInput(xmlStream, null)
+
+                val epgEntries = mutableListOf<EpgEntity>()
+
+                var eventType = parser.eventType
+
+                while (eventType != XmlPullParser.END_DOCUMENT) {
+
+                    if (eventType == XmlPullParser.START_TAG && parser.name == "programme") {
+
+                        val channelId = parser.getAttributeValue(null, "channel") ?: ""
+                        val startTime = parseEpgDate(parser.getAttributeValue(null, "start"))
+                        val endTime = parseEpgDate(parser.getAttributeValue(null, "stop"))
+
+                        var title = ""
+                        var description = ""
+
+                        var insideProgramme = true
+                        while (insideProgramme) {
+                            eventType = parser.next()
+                            when {
+                                eventType == XmlPullParser.START_TAG && parser.name == "title" -> {
+                                    title = parser.nextText()
+                                }
+                                eventType == XmlPullParser.START_TAG && parser.name == "desc" -> {
+                                    description = parser.nextText()
+                                }
+                                eventType == XmlPullParser.END_TAG && parser.name == "programme" -> {
+                                    insideProgramme = false
+                                }
+                            }
+                        }
+
+                        epgEntries.add(
+                            EpgEntity(
+                                epgId = channelId,
+                                title = title,
+                                description = description,
+                                startTime = startTime,
+                                endTime = endTime
+                            )
+                        )
+
+                    }
+
+                    eventType = parser.next()
+
+                }
+
+                if (epgEntries.isNotEmpty()) {
+                    epgDao.refreshEpg(epgEntries)
+                    epgStore.saveLastSyncDate(today)
+                }
+
+                xmlStream.close()
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+        }.join()
+
+    }
+
     override suspend fun searchAllMedia(query: String): Map<MediaType, List<Media>> {
 
         if (query.length < 3) return emptyMap()
@@ -307,6 +400,12 @@ class MediaRepositoryImpl @Inject constructor(
 
         return entity?.toAsset()
 
+    }
+
+    override suspend fun getCurrentEpgSnapshot(currentTime: Long): List<Epg> {
+        return epgDao.getAllCurrentPrograms(currentTime).map { entity ->
+            entity.toDomain()
+        }
     }
 
     override suspend fun getSiblingsForAsset(
