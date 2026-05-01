@@ -1,4 +1,4 @@
-package com.jycra.filmaico.core.model.stream
+package com.jycra.filmaico.core.firebase.model.stream
 
 import androidx.annotation.Keep
 import com.google.firebase.firestore.IgnoreExtraProperties

@@ -5,10 +5,10 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
-import com.jycra.filmaico.core.model.user.AuthTokenDto
-import com.jycra.filmaico.core.model.user.SessionDto
-import com.jycra.filmaico.core.model.user.SubscriptionDto
-import com.jycra.filmaico.core.model.user.UserDto
+import com.jycra.filmaico.core.firebase.model.user.AuthTokenDto
+import com.jycra.filmaico.core.firebase.model.user.SessionDto
+import com.jycra.filmaico.core.firebase.model.user.SubscriptionDto
+import com.jycra.filmaico.core.firebase.model.user.UserDto
 import com.jycra.filmaico.domain.user.error.AuthError
 import com.jycra.filmaico.domain.user.model.AuthStatus
 import com.jycra.filmaico.domain.user.util.AuthResult

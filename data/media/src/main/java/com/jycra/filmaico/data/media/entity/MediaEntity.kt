@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.jycra.filmaico.core.model.stream.StreamDto
+import com.jycra.filmaico.core.firebase.model.stream.StreamDto
 
 @Entity(
     tableName = "media",

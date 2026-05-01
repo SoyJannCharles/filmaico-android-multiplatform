@@ -1,6 +1,6 @@
 package com.jycra.filmaico.data.user.mapper
 
-import com.jycra.filmaico.core.model.user.SessionDto
+import com.jycra.filmaico.core.firebase.model.user.SessionDto
 import com.jycra.filmaico.domain.user.model.Session
 import java.util.Date
 

@@ -1,6 +1,6 @@
 package com.jycra.filmaico.data.user.mapper
 
-import com.jycra.filmaico.core.model.user.UserDto
+import com.jycra.filmaico.core.firebase.model.user.UserDto
 import com.jycra.filmaico.domain.user.model.User
 
 fun UserDto.toDomain(): User {

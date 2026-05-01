@@ -1,6 +1,6 @@
 package com.jycra.filmaico.data.media.util.mapper.dto
 
-import com.jycra.filmaico.core.model.media.type.MovieDto
+import com.jycra.filmaico.core.firebase.model.media.type.MovieDto
 import com.jycra.filmaico.data.media.entity.MediaEntity
 import com.jycra.filmaico.data.media.entity.MediaTagCrossRef
 import com.jycra.filmaico.data.media.util.mapper.MediaMappingResult

@@ -1,6 +1,6 @@
 package com.jycra.filmaico.data.stream.data.source
 
-import com.jycra.filmaico.core.model.stream.EdgeRouteDto
+import com.jycra.filmaico.core.firebase.model.stream.EdgeRouteDto
 
 interface EdgeRouteSource {
 

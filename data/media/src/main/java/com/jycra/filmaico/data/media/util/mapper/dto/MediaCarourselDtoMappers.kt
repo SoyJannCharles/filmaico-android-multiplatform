@@ -1,6 +1,6 @@
 package com.jycra.filmaico.data.media.util.mapper.dto
 
-import com.jycra.filmaico.core.model.media.MediaCarouselDto
+import com.jycra.filmaico.core.firebase.model.media.MediaCarouselDto
 import com.jycra.filmaico.data.media.entity.MediaCarouselEntity
 import com.jycra.filmaico.domain.media.model.MediaType
 

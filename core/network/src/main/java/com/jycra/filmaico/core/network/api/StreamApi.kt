@@ -1,7 +1,7 @@
 package com.jycra.filmaico.core.network.api
 
-import com.jycra.filmaico.core.model.stream.CookieDto
-import com.jycra.filmaico.core.model.stream.KeysDto
+import com.jycra.filmaico.core.firebase.model.stream.CookieDto
+import com.jycra.filmaico.core.firebase.model.stream.KeysDto
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response

@@ -1,9 +1,9 @@
-package com.jycra.filmaico.core.model.media.type
+package com.jycra.filmaico.core.firebase.model.media.type
 
 import androidx.annotation.Keep
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.IgnoreExtraProperties
-import com.jycra.filmaico.core.model.stream.StreamDto
+import com.jycra.filmaico.core.firebase.model.stream.StreamDto
 
 @Keep
 @IgnoreExtraProperties

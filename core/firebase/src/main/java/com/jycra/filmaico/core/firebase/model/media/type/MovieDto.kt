@@ -1,22 +1,21 @@
-package com.jycra.filmaico.core.model.media
+package com.jycra.filmaico.core.firebase.model.media.type
 
 import androidx.annotation.Keep
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.IgnoreExtraProperties
-import com.jycra.filmaico.core.model.stream.StreamDto
+import com.jycra.filmaico.core.firebase.model.stream.StreamDto
 
 @Keep
 @IgnoreExtraProperties
-data class MediaDto(
+data class MovieDto(
     @DocumentId
     val id: String? = null,
-    val type: String = "episode",
     val name: Map<String, String> = emptyMap(),
     val synopsis: Map<String, String> = emptyMap(),
-    val thumbnailUrl: String = "",
-    val duration: Long = 0L,
-    val number: Int = 0,
+    val posterUrl: Map<String, String> = emptyMap(),
     val airDate: Timestamp? = null,
+    val duration: Long = 0L,
+    val tags: List<String> = emptyList(),
     val sources: List<StreamDto> = emptyList()
 )

@@ -4,9 +4,8 @@ import android.os.Build
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
-import com.jycra.filmaico.core.model.user.AuthTokenDto
-import com.jycra.filmaico.core.model.user.SessionDto
-import com.jycra.filmaico.core.model.user.UserDto
+import com.jycra.filmaico.core.firebase.model.user.AuthTokenDto
+import com.jycra.filmaico.core.firebase.model.user.SessionDto
 import com.jycra.filmaico.data.user.data.DeviceIdProvider
 import com.jycra.filmaico.data.user.data.source.AuthSource
 import com.jycra.filmaico.data.user.data.source.UserSource
@@ -19,7 +18,6 @@ import com.jycra.filmaico.domain.user.util.AuthResult
 import com.jycra.filmaico.domain.user.util.SessionStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest

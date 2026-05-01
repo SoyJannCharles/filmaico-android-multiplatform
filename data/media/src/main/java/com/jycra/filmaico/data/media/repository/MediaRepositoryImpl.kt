@@ -1,10 +1,10 @@
 package com.jycra.filmaico.data.media.repository
 
 import android.util.Log
-import com.jycra.filmaico.core.model.media.type.AnimeDto
-import com.jycra.filmaico.core.model.media.type.ChannelDto
-import com.jycra.filmaico.core.model.media.type.MovieDto
-import com.jycra.filmaico.core.model.media.type.SerieDto
+import com.jycra.filmaico.core.firebase.model.media.type.AnimeDto
+import com.jycra.filmaico.core.firebase.model.media.type.ChannelDto
+import com.jycra.filmaico.core.firebase.model.media.type.MovieDto
+import com.jycra.filmaico.core.firebase.model.media.type.SerieDto
 import com.jycra.filmaico.data.media.data.dao.EpgDao
 import com.jycra.filmaico.data.media.data.dao.MediaDao
 import com.jycra.filmaico.data.media.data.service.EpgService

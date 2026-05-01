@@ -3,7 +3,7 @@ package com.jycra.filmaico.data.media.util.converter
 import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.jycra.filmaico.core.model.stream.StreamDto
+import com.jycra.filmaico.core.firebase.model.stream.StreamDto
 
 class MediaConverters {
 

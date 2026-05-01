@@ -1,7 +1,7 @@
 package com.jycra.filmaico.data.stream.data.service
 
-import com.jycra.filmaico.core.model.stream.CookieDto
-import com.jycra.filmaico.core.model.stream.KeysDto
+import com.jycra.filmaico.core.firebase.model.stream.CookieDto
+import com.jycra.filmaico.core.firebase.model.stream.KeysDto
 import kotlinx.coroutines.flow.Flow
 
 interface StreamService {

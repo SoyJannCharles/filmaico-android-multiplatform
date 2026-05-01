@@ -1,6 +1,6 @@
 package com.jycra.filmaico.data.user.mapper
 
-import com.jycra.filmaico.core.model.user.AuthTokenDto
+import com.jycra.filmaico.core.firebase.model.user.AuthTokenDto
 import com.jycra.filmaico.domain.user.model.AuthStatus
 import com.jycra.filmaico.domain.user.model.AuthToken
 

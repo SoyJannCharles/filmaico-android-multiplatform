@@ -5,7 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
-import com.jycra.filmaico.core.model.stream.StreamDto
+import com.jycra.filmaico.core.firebase.model.stream.StreamDto
 import com.jycra.filmaico.data.media.entity.MediaCarouselEntity
 import com.jycra.filmaico.data.media.entity.MediaEntity
 import com.jycra.filmaico.data.media.entity.MediaSeasonEntity

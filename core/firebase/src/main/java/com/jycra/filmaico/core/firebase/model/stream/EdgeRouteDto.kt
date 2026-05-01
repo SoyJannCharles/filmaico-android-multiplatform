@@ -1,4 +1,4 @@
-package com.jycra.filmaico.core.model.user
+package com.jycra.filmaico.core.firebase.model.stream
 
 import androidx.annotation.Keep
 import com.google.firebase.Timestamp
@@ -7,10 +7,9 @@ import com.google.firebase.firestore.ServerTimestamp
 
 @Keep
 @IgnoreExtraProperties
-data class SessionDto(
-    val sessionId: String = "",
+data class EdgeRouteDto(
+    val url: String? = null,
+    val expiresAt: Timestamp? = null,
     @ServerTimestamp
-    val loginDate: Timestamp? = null,
-    val deviceId: String = "",
-    val deviceInfo: String = ""
+    val lastUsed: Timestamp? = null
 )

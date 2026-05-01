@@ -1,7 +1,7 @@
 package com.jycra.filmaico.data.media.util.mapper.dto
 
-import com.jycra.filmaico.core.model.stream.DrmInfoDto
-import com.jycra.filmaico.core.model.stream.StreamDto
+import com.jycra.filmaico.core.firebase.model.stream.DrmInfoDto
+import com.jycra.filmaico.core.firebase.model.stream.StreamDto
 import com.jycra.filmaico.domain.media.model.stream.DrmInfo
 import com.jycra.filmaico.domain.media.model.stream.Key
 import com.jycra.filmaico.domain.media.model.stream.Stream

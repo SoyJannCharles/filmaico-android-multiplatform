@@ -3,7 +3,7 @@ package com.jycra.filmaico.data.stream.data.source
 import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
-import com.jycra.filmaico.core.model.stream.EdgeRouteDto
+import com.jycra.filmaico.core.firebase.model.stream.EdgeRouteDto
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 

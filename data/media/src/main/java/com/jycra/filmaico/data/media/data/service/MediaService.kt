@@ -3,9 +3,9 @@ package com.jycra.filmaico.data.media.data.service
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
-import com.jycra.filmaico.core.model.media.MediaCarouselDto
-import com.jycra.filmaico.core.model.media.MediaDto
-import com.jycra.filmaico.core.model.media.MediaSeasonDto
+import com.jycra.filmaico.core.firebase.model.media.MediaCarouselDto
+import com.jycra.filmaico.core.firebase.model.media.MediaDto
+import com.jycra.filmaico.core.firebase.model.media.MediaSeasonDto
 import com.jycra.filmaico.domain.media.model.MediaType
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow

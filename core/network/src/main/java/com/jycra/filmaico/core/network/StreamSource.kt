@@ -1,24 +1,21 @@
 package com.jycra.filmaico.core.network
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
+import android.os.Handler
+import android.os.Looper
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.jycra.filmaico.core.model.stream.CookieDto
-import com.jycra.filmaico.core.model.stream.KeysDto
+import com.jycra.filmaico.core.firebase.model.stream.CookieDto
+import com.jycra.filmaico.core.firebase.model.stream.KeysDto
 import com.jycra.filmaico.core.network.api.StreamApi
 import com.jycra.filmaico.core.network.di.XAuthHttpClient
 import com.jycra.filmaico.data.stream.data.service.StreamService
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
@@ -39,7 +36,6 @@ import okhttp3.Response
 import java.io.IOException
 import java.net.URI
 import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.resume
 
 class StreamSource @Inject constructor(
@@ -51,116 +47,105 @@ class StreamSource @Inject constructor(
 
     override fun resolveUrlFromWebView(iframeUrl: String): Flow<String> = callbackFlow {
 
-        val job = Job()
-        val scope = CoroutineScope(Dispatchers.IO + job)
-
+        var isFlowClosed = false
         var webView: WebView? = null
 
-        scope.launch {
+        val job = launch(Dispatchers.Main) {
 
             try {
 
-                ensureActive()
-
-                val staticUrl = engine.extract(iframeUrl)
-
-                ensureActive()
+                val staticUrl = withContext(Dispatchers.IO) {
+                    engine.extract(iframeUrl)
+                }
 
                 if (staticUrl != null) {
-                    trySend(staticUrl)
-                    close()
+                    if (!isFlowClosed) {
+                        trySend(staticUrl)
+                        close()
+                    }
                     return@launch
                 }
 
-                withContext(Dispatchers.Main) {
-                    webView = runWebViewFallback(iframeUrl, this@callbackFlow)
+                webView = WebView(context).apply {
+
+                    willNotDraw()
+
+                    settings.apply {
+
+                        javaScriptEnabled = true
+                        mediaPlaybackRequiresUserGesture = false
+
+                        loadsImagesAutomatically = false
+                        blockNetworkImage = true
+
+                        domStorageEnabled = true
+                        databaseEnabled = false
+
+                        setSupportZoom(false)
+
+                    }
+
+                    webViewClient = object : WebViewClient() {
+                        override fun shouldInterceptRequest(
+                            view: WebView?,
+                            request: WebResourceRequest?
+                        ): WebResourceResponse? {
+
+                            val url = request?.url?.toString() ?: return null
+
+                            val clean = url.substringBefore("?")
+                            val lowerClean = clean.lowercase()
+
+                            val hasVideoExtension = lowerClean.contains(".m3u8") ||
+                                    lowerClean.contains(".txt") ||
+                                    lowerClean.contains(".wolf") ||
+                                    lowerClean.contains(".m3u")
+
+                            val isPlaylist = lowerClean.contains("master") ||
+                                    lowerClean.contains("index") ||
+                                    lowerClean.contains("playlist") ||
+                                    lowerClean.contains("global")
+
+                            if (hasVideoExtension && isPlaylist) {
+
+                                if (!isFlowClosed) {
+                                    trySend(url)
+                                }
+
+                                view?.post { view.stopLoading() }
+
+                            }
+
+                            return super.shouldInterceptRequest(view, request)
+
+                        }
+                    }
+
+                    loadUrl(iframeUrl)
+
                 }
 
-            } catch (e: IOException) {
-                Log.e("NetworkError", "Error capturado: ${e.message}")
-            } catch (e: CancellationException) {
-                Log.d("StreamNetworkSource", "Cancelado scraping")
+            } catch (e: Exception) {
+                close(e)
             }
 
         }
 
         awaitClose {
 
-            Log.d("StreamNetworkSource", "Cerrando flujo")
+            isFlowClosed = true
 
-            job.cancel()
-
-            webView?.stopLoading()
-            webView?.destroy()
-            webView = null
-
-        }
-
-    }.flowOn(Dispatchers.IO)
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun runWebViewFallback(iframeUrl: String, scope: ProducerScope<String>): WebView {
-
-        val webView = WebView(context)
-
-        webView.apply {
-
-            willNotDraw()
-
-            settings.apply {
-
-                javaScriptEnabled = true
-                mediaPlaybackRequiresUserGesture = false
-
-                loadsImagesAutomatically = false
-                blockNetworkImage = true
-
-                domStorageEnabled = true
-                databaseEnabled = false
-
-                setSupportZoom(false)
-
+            Handler(Looper.getMainLooper()).post {
+                webView?.apply {
+                    stopLoading()
+                    loadUrl("about:blank")
+                    destroy()
+                }
+                webView = null
+                job.cancel()
             }
 
-            webViewClient = object : WebViewClient() {
-
-                override fun shouldInterceptRequest(
-                    view: WebView?,
-                    request: WebResourceRequest?
-                ): WebResourceResponse? {
-
-                    val url = request?.url?.toString() ?: return null
-
-                    val clean = url.substringBefore("?")
-
-                    val isTarget =
-                        (clean.endsWith(".m3u8") && clean.contains("master")) ||
-                                (clean.endsWith(".txt") && clean.contains("master"))
-
-                    if (isTarget) {
-                        scope.trySend(url)
-                        view?.post { view.stopLoading() }
-                    }
-
-                    return super.shouldInterceptRequest(view, request)
-
-                }
-
-                override fun shouldOverrideUrlLoading(
-                    view: WebView?,
-                    request: WebResourceRequest?
-                ): Boolean {
-                    val url = request?.url.toString()
-                    return url.startsWith("intent://") || url.startsWith("market://")
-                }
-
-            }
-
-            loadUrl(iframeUrl)
-
         }
-
-        return webView
 
     }
 

@@ -1,14 +1,14 @@
-package com.jycra.filmaico.core.model.media.type
+package com.jycra.filmaico.core.firebase.model.media.type
 
 import androidx.annotation.Keep
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.IgnoreExtraProperties
-import com.jycra.filmaico.core.model.media.MediaSeasonDto
+import com.jycra.filmaico.core.firebase.model.media.MediaSeasonDto
 
 @Keep
 @IgnoreExtraProperties
-data class SerieDto(
+data class AnimeDto(
     @DocumentId
     val id: String? = null,
     val name: Map<String, String> = emptyMap(),
@@ -18,5 +18,5 @@ data class SerieDto(
     val lastAirDate: Timestamp? = null,
     val status: String = "Unknown",
     val tags: List<String> = emptyList(),
-    val seasons: List<MediaSeasonDto> = emptyList(),
+    val seasons: List<MediaSeasonDto> = emptyList()
 )

@@ -1,4 +1,4 @@
-package com.jycra.filmaico.core.model.media
+package com.jycra.filmaico.core.firebase.model.media
 
 import androidx.annotation.Keep
 import com.google.firebase.firestore.DocumentId
