@@ -6,7 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException
 import com.jycra.filmaico.core.firebase.model.media.MediaCarouselDto
 import com.jycra.filmaico.core.firebase.model.media.MediaDto
 import com.jycra.filmaico.core.firebase.model.media.MediaSeasonDto
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

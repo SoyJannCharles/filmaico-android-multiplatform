@@ -2,7 +2,7 @@ package com.jycra.filmaico.domain.media.usecase
 
 import com.jycra.filmaico.domain.history.repository.MediaProgressRepository
 import com.jycra.filmaico.domain.media.model.Media
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.domain.media.repository.MediaRepository
 import javax.inject.Inject
 

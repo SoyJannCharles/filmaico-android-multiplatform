@@ -15,7 +15,7 @@ import com.jycra.filmaico.core.ui.feature.media.MediaCarousel
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusCallbacks
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
 import com.jycra.filmaico.core.ui.util.focus.FocusBeacon
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.feature.search.component.topbar.SearchTopbar
 
 @Composable

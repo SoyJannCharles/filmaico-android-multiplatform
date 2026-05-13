@@ -18,7 +18,6 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":domain:media"))
 }
 
 addRuntimeCompose()

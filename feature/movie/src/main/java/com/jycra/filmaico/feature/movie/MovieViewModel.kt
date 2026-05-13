@@ -7,11 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jycra.filmaico.core.ui.feature.media.util.mapper.toUiCarousels
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.domain.media.usecase.GetMediaContentUseCase
-import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
+import com.jycra.filmaico.domain.media.usecase.GetStreamMetadataUseCase
 import com.jycra.filmaico.domain.stream.util.StreamExtractionState
-import com.jycra.filmaico.shared.managers.StreamPreloadManager
+import com.jycra.filmaico.shared.managers.StreamManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,9 +25,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MovieViewModel @Inject constructor(
-    private val streamPreloadManager: StreamPreloadManager,
+    private val streamManager: StreamManager,
     private val getMediaContentUseCase: GetMediaContentUseCase,
-    private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
+    private val getStreamMetadataUseCase: GetStreamMetadataUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MovieUiState>(MovieUiState.Loading)
@@ -39,7 +39,7 @@ class MovieViewModel @Inject constructor(
     var mediaFocusState by mutableStateOf(MediaFocusState())
         private set
 
-    val extractionState: StateFlow<StreamExtractionState> = streamPreloadManager.extractionState
+    val extractionState: StateFlow<StreamExtractionState> = streamManager.extractionState
 
     init {
         observeContent()
@@ -100,7 +100,7 @@ class MovieViewModel @Inject constructor(
 
             viewModelScope.launch {
 
-                val metadata = getPlayerMetadataUseCase(
+                val metadata = getStreamMetadataUseCase(
                     assetId = item.id,
                     mediaType = MediaType.MOVIE
                 )
@@ -108,12 +108,6 @@ class MovieViewModel @Inject constructor(
                 if (metadata != null && metadata.sources.isNotEmpty()) {
 
                     val bestSource = metadata.sources.first()
-
-                    streamPreloadManager.startPreload(
-                        assetId = metadata.assetId,
-                        mediaType = metadata.mediaType,
-                        source = bestSource
-                    )
 
                 }
 

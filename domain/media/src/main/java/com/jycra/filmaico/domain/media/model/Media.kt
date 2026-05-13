@@ -1,7 +1,7 @@
 package com.jycra.filmaico.domain.media.model
 
-import com.jycra.filmaico.domain.media.model.ContentStatus
-import com.jycra.filmaico.domain.media.model.stream.Stream
+import com.jycra.filmaico.domain.stream.util.MediaType
+import com.jycra.filmaico.domain.stream.model.Stream
 
 sealed interface Media {
 

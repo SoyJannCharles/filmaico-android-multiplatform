@@ -13,6 +13,7 @@ android {
 dependencies {
     implementation(project(":core:device"))
     implementation(project(":domain:media"))
+    implementation(project(":domain:stream"))
     implementation(project(":feature:movie"))
     implementation(project(":feature:serie"))
     implementation(project(":feature:anime"))

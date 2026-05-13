@@ -18,6 +18,7 @@ kotlin {
 
 dependencies {
     implementation(project(":domain:history"))
+    implementation(project(":domain:stream"))
 }
 
 addCoroutines()

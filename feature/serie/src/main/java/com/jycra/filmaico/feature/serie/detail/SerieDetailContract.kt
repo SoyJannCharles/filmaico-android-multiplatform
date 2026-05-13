@@ -1,7 +1,7 @@
 package com.jycra.filmaico.feature.serie.detail
 
 import com.jycra.filmaico.core.ui.feature.media.model.UiMediaDetail
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 
 sealed interface SerieDetailUiState {

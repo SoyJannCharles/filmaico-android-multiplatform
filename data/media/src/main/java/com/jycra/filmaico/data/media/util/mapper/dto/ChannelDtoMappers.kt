@@ -4,7 +4,7 @@ import com.jycra.filmaico.core.firebase.model.media.type.ChannelDto
 import com.jycra.filmaico.data.media.entity.MediaEntity
 import com.jycra.filmaico.data.media.entity.MediaTagCrossRef
 import com.jycra.filmaico.data.media.util.mapper.MediaMappingResult
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 fun ChannelDto.toMappingResult(): MediaMappingResult {
 

@@ -21,9 +21,7 @@ class RemoteConfig @Inject constructor(
             "aes_decryption_pass_iv" to "",
             "aes_decryption_pass_key" to "",
             "tvar_cdn_auth_header" to "",
-            "drm_user_agent" to "",
-            "cvattv_jwt_url" to "",
-            "cvattv_cdn_token_url" to ""
+            "drm_user_agent" to ""
         ))
     }
 
@@ -44,11 +42,5 @@ class RemoteConfig @Inject constructor(
 
     override fun getDrmUserAgent(): String =
         firebaseRemoteConfig.getString("drm_user_agent")
-
-    override fun getCvattvJwtUrl(): String =
-        firebaseRemoteConfig.getString("cvattv_jwt_url")
-
-    override fun getCvattvCdnTokenUrl(): String =
-        firebaseRemoteConfig.getString("cvattv_cdn_token_url")
 
 }

@@ -2,7 +2,7 @@ package com.jycra.filmaico.data.stream.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.jycra.filmaico.domain.media.model.stream.DrmKeys
+import com.jycra.filmaico.domain.stream.model.DrmKeys
 
 @Entity(tableName = "stream_cache")
 data class StreamCacheEntity(

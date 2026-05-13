@@ -6,8 +6,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.jycra.filmaico.data.stream.entity.StreamCacheEntity
-import com.jycra.filmaico.domain.media.model.MediaType
-import com.jycra.filmaico.domain.media.model.stream.DrmKeys
+import com.jycra.filmaico.domain.stream.util.MediaType
+import com.jycra.filmaico.domain.stream.model.DrmKeys
 
 @Dao
 interface StreamCacheDao {

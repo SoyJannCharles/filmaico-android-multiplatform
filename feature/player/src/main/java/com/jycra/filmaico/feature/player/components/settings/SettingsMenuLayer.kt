@@ -25,7 +25,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import com.jycra.filmaico.domain.stream.model.metadata.AudioMetadata
 import com.jycra.filmaico.core.player.model.Quality
-import com.jycra.filmaico.domain.media.model.stream.Stream
+import com.jycra.filmaico.domain.stream.model.Stream
 import com.jycra.filmaico.feature.player.AudioState
 import com.jycra.filmaico.feature.player.ProviderState
 import com.jycra.filmaico.feature.player.QualityState

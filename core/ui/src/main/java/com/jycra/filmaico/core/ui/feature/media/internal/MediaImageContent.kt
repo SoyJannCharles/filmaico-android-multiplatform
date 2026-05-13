@@ -12,7 +12,7 @@ import coil3.compose.AsyncImage
 import com.jycra.filmaico.core.ui.component.image.BlurredImage
 import com.jycra.filmaico.core.ui.feature.media.model.UiMedia
 import com.jycra.filmaico.core.ui.feature.media.util.dimens.MediaCardDimensions
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 @Composable
 fun MediaImageContent(media: UiMedia, dimensions: MediaCardDimensions) {

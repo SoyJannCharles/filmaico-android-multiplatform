@@ -12,6 +12,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:common"))
     implementation(project(":core:config"))
     implementation(project(":core:security"))
     implementation(project(":core:firebase"))

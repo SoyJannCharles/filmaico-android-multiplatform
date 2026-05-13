@@ -1,7 +1,7 @@
 package com.jycra.filmaico.feature.home
 
 import com.jycra.filmaico.core.ui.util.UiText
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 sealed interface HomeUiState {
     data object Idle: HomeUiState

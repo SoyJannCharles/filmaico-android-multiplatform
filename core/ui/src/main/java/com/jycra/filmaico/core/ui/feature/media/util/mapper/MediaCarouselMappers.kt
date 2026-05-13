@@ -3,7 +3,7 @@ package com.jycra.filmaico.core.ui.feature.media.util.mapper
 import com.jycra.filmaico.core.ui.feature.media.model.UiMediaCarousel
 import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.model.MediaCarousel
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.domain.media.util.extesion.localizedTitle
 
 fun MediaCarousel.toUiCarousels() = UiMediaCarousel(

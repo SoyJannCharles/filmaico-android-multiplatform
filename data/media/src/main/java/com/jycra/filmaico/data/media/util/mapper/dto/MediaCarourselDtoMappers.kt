@@ -2,7 +2,7 @@ package com.jycra.filmaico.data.media.util.mapper.dto
 
 import com.jycra.filmaico.core.firebase.model.media.MediaCarouselDto
 import com.jycra.filmaico.data.media.entity.MediaCarouselEntity
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 fun MediaCarouselDto.toEntity(mediaType: MediaType): MediaCarouselEntity {
     return MediaCarouselEntity(

@@ -2,7 +2,7 @@ package com.jycra.filmaico.domain.media.util.mapper
 
 import com.jycra.filmaico.domain.history.model.MediaProgress
 import com.jycra.filmaico.domain.media.model.Media
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 fun MediaProgress.toMediaAsset(): Media.Asset {
     return Media.Asset(

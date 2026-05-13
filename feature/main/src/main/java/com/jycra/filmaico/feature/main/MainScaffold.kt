@@ -31,7 +31,7 @@ import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.navigation.route.MainRoutes
 import com.jycra.filmaico.core.ui.component.navigation.bottom.BottomNav
 import com.jycra.filmaico.core.ui.component.navigation.bottom.BottomNavItem
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.feature.anime.AnimeRoute
 import com.jycra.filmaico.feature.channel.ChannelRoute
 import com.jycra.filmaico.feature.home.HomeRoute

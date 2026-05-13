@@ -10,4 +10,5 @@ dependencies {
     implementation(project(":core:device"))
     implementation(project(":core:ui"))
     implementation(project(":domain:media"))
+    implementation(project(":domain:stream"))
 }

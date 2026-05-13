@@ -3,7 +3,7 @@ package com.jycra.filmaico.data.media.util.mapper.entity
 import com.jycra.filmaico.data.media.entity.MediaCarouselEntity
 import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.model.MediaCarousel
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 fun MediaCarouselEntity.toDomain(items: List<Media> = emptyList()): MediaCarousel {
     return MediaCarousel(

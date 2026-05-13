@@ -7,7 +7,7 @@ import com.jycra.filmaico.core.ui.feature.media.util.variant.MediaCardVariant
 import com.jycra.filmaico.core.ui.util.formatDurationLabels
 import com.jycra.filmaico.domain.media.model.ContentStatus
 import com.jycra.filmaico.domain.media.model.Media
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.domain.media.util.extesion.localizedImageUrl
 import com.jycra.filmaico.domain.media.util.extesion.localizedName
 import com.jycra.filmaico.domain.media.util.extesion.localizedSynopsis

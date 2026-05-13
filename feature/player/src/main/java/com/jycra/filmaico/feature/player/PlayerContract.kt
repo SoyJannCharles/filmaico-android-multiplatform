@@ -4,9 +4,11 @@ import android.view.TextureView
 import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.domain.stream.model.metadata.AudioMetadata
 import com.jycra.filmaico.core.player.model.Quality
+import com.jycra.filmaico.domain.media.model.metadata.StreamMetadata
 import com.jycra.filmaico.domain.media.model.metadata.VideoMetadata
-import com.jycra.filmaico.domain.media.model.stream.Stream
+import com.jycra.filmaico.domain.stream.model.Stream
 import com.jycra.filmaico.domain.stream.model.metadata.ProviderMetadata
+import com.jycra.filmaico.domain.stream.util.StreamExtractionState
 import com.jycra.filmaico.feature.player.components.settings.SettingsMenuState
 
 sealed interface PlayerUiState {
@@ -22,6 +24,15 @@ sealed interface PlayerUiState {
     data class Error(val message: String) : PlayerUiState
     data object Closing : PlayerUiState
 }
+
+data class StreamState(
+    val metadata: StreamMetadata? = null,
+    val availableAudios: List<AudioMetadata> = emptyList(),
+    val availableProviders: List<Stream> = emptyList(),
+    val currentAudio: AudioMetadata? = null,
+    val currentProvider: Stream? = null,
+    val extractionState: StreamExtractionState = StreamExtractionState.Idle
+)
 
 data class PlaybackState(
     val isPlaying: Boolean = true,

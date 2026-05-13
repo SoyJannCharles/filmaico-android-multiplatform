@@ -3,11 +3,12 @@ package com.jycra.filmaico.feature.movie.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.core.player.PlayerManager
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.domain.media.usecase.GetMediaContainerUseCase
-import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
+import com.jycra.filmaico.domain.media.usecase.GetStreamMetadataUseCase
 import com.jycra.filmaico.domain.stream.util.StreamExtractionState
-import com.jycra.filmaico.shared.managers.StreamPreloadManager
+import com.jycra.filmaico.shared.managers.StreamManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -20,9 +21,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MovieDetailViewModel @Inject constructor(
-    private val streamPreloadManager: StreamPreloadManager,
+    private val streamManager: StreamManager,
+    private val playerManager: PlayerManager,
     private val getMediaContainerUseCase: GetMediaContainerUseCase,
-    private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
+    private val getStreamMetadataUseCase: GetStreamMetadataUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -34,7 +36,7 @@ class MovieDetailViewModel @Inject constructor(
     private val _effect = Channel<MovieDetailUiEffect>()
     val effect = _effect.receiveAsFlow()
 
-    val extractionState: StateFlow<StreamExtractionState> = streamPreloadManager.extractionState
+    val extractionState: StateFlow<StreamExtractionState> = streamManager.extractionState
 
     init {
         loadDetails()
@@ -58,7 +60,7 @@ class MovieDetailViewModel @Inject constructor(
 
             try {
 
-                val metadata = getPlayerMetadataUseCase(
+                val metadata = getStreamMetadataUseCase(
                     assetId = containerId,
                     mediaType = MediaType.MOVIE
                 )
@@ -67,11 +69,20 @@ class MovieDetailViewModel @Inject constructor(
 
                     val bestSource = metadata.sources.first()
 
-                    streamPreloadManager.startPreload(
+                    /*val urlResolved = streamManager.getStream(
                         assetId = metadata.assetId,
                         mediaType = metadata.mediaType,
                         source = bestSource
                     )
+
+                    urlResolved.fold(
+                        onSuccess = { playbackData ->
+                            playerManager.prepareInBackground(playbackData)
+                        },
+                        onFailure = { error ->
+                            // manejar error
+                        }
+                    )*/
 
                 }
 
@@ -99,7 +110,7 @@ class MovieDetailViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        streamPreloadManager.clear()
+        streamManager.clear()
     }
 
 }

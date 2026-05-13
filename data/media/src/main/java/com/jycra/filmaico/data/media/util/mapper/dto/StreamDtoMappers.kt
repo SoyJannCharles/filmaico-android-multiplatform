@@ -2,10 +2,10 @@ package com.jycra.filmaico.data.media.util.mapper.dto
 
 import com.jycra.filmaico.core.firebase.model.stream.DrmInfoDto
 import com.jycra.filmaico.core.firebase.model.stream.StreamDto
-import com.jycra.filmaico.domain.media.model.stream.DrmInfo
-import com.jycra.filmaico.domain.media.model.stream.Key
-import com.jycra.filmaico.domain.media.model.stream.Stream
-import com.jycra.filmaico.domain.media.model.stream.StreamType
+import com.jycra.filmaico.domain.stream.model.DrmContent
+import com.jycra.filmaico.domain.stream.model.Key
+import com.jycra.filmaico.domain.stream.model.Stream
+import com.jycra.filmaico.domain.stream.util.StreamType
 
 fun StreamDto.toDomain(): Stream? {
     return when (StreamType.fromString(this.type)) {
@@ -13,7 +13,7 @@ fun StreamDto.toDomain(): Stream? {
             val uri = this.uri ?: return null
             Stream.Direct(
                 uri = uri,
-                drmInfo = this.drmInfo?.toDomain(),
+                drmContent = this.drmInfo?.toDomain(),
                 headers = this.headers,
                 cookieUrl = this.cookieUrl,
                 audio = this.audio,
@@ -25,7 +25,7 @@ fun StreamDto.toDomain(): Stream? {
             val url = this.iframeUrl ?: return null
             Stream.WebViewScrap(
                 iframeUrl = url,
-                drmInfo = this.drmInfo?.toDomain(),
+                drmContent = this.drmInfo?.toDomain(),
                 audio = this.audio,
                 subtitle = this.subtitle,
                 provider = this.provider
@@ -35,11 +35,11 @@ fun StreamDto.toDomain(): Stream? {
     }
 }
 
-fun DrmInfoDto.toDomain(): DrmInfo? {
+fun DrmInfoDto.toDomain(): DrmContent? {
 
     if (!this.isValid()) return null
 
-    return DrmInfo(
+    return DrmContent(
         scheme = this.scheme,
         licenseUrl = this.licenseUrl,
         staticKeys = Key(

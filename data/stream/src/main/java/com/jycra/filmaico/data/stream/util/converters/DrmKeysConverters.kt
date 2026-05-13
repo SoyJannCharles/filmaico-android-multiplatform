@@ -3,7 +3,7 @@ package com.jycra.filmaico.data.stream.util.converters
 import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.jycra.filmaico.domain.media.model.stream.DrmKeys
+import com.jycra.filmaico.domain.stream.model.DrmKeys
 
 class DrmKeysConverters {
 

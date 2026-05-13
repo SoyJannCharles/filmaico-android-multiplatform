@@ -11,24 +11,22 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
+import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.player.PlayerManager
-import com.jycra.filmaico.domain.stream.model.metadata.AudioMetadata
 import com.jycra.filmaico.core.player.model.Quality
 import com.jycra.filmaico.core.player.util.getAvailableQualities
 import com.jycra.filmaico.core.player.util.setVideoQuality
 import com.jycra.filmaico.domain.history.usecase.UpsertMediaProgressUseCase
-import com.jycra.filmaico.domain.media.model.MediaType
-import com.jycra.filmaico.domain.media.model.metadata.PlayerMetadata
-import com.jycra.filmaico.domain.media.model.stream.Stream
-import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
+import com.jycra.filmaico.domain.media.usecase.GetStreamMetadataUseCase
 import com.jycra.filmaico.domain.media.usecase.ToggleSaveStatusUseCase
-import com.jycra.filmaico.domain.stream.usecase.AnalyzeProviderUseCase
-import com.jycra.filmaico.domain.stream.usecase.ReportSuccessfulPlaybackUseCase
+import com.jycra.filmaico.domain.stream.util.MediaType
+import com.jycra.filmaico.domain.stream.model.Stream
+import com.jycra.filmaico.domain.stream.model.metadata.AudioMetadata
 import com.jycra.filmaico.domain.stream.util.StreamExtractionState
 import com.jycra.filmaico.feature.player.components.settings.SettingsMenuState
-import com.jycra.filmaico.shared.managers.StreamPreloadManager
+import com.jycra.filmaico.shared.managers.StreamManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -50,10 +48,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
-    private val streamPreloadManager: StreamPreloadManager,
-    private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
-    private val reportSuccessfulPlaybackUseCase: ReportSuccessfulPlaybackUseCase,
-    private val analyzeProviderUseCase: AnalyzeProviderUseCase,
+    private val streamManager: StreamManager,
+    private val getStreamMetadataUseCase: GetStreamMetadataUseCase,
     private val upsertMediaProgressUseCase: UpsertMediaProgressUseCase,
     private val toggleSaveStatusUseCase: ToggleSaveStatusUseCase,
     val playerManager: PlayerManager,
@@ -70,25 +66,12 @@ class PlayerViewModel @Inject constructor(
     private val _effect = Channel<PlayerUiEffect>()
     val effect = _effect.receiveAsFlow()
 
-    val extractionState: StateFlow<StreamExtractionState> = streamPreloadManager.extractionState
+    val extractionState: StateFlow<StreamExtractionState> = streamManager.extractionState
 
     private val isPlaybackReady: Boolean
         get() = _uiState.value is PlayerUiState.Success
 
     var playerView: TextureView? = null
-
-    private var rawMetadata: PlayerMetadata? = null
-
-    private var filteredSources: List<Stream> = emptyList()
-
-    private var currentOriginalUri: String? = null
-    private var currentResolvedUrl: String? = null
-
-    private var currentSourceIndex = 0
-    private var lastExecutionWasForced = false
-
-    private var networkRetryCount = 0
-    private val maxRetries = 3
 
     private var isMenuInitialized = false
 
@@ -96,20 +79,45 @@ class PlayerViewModel @Inject constructor(
     private var progressPollerJob: Job? = null
 
     init {
+
         setupPlayerListeners()
-        loadAsset(initialMediaId, initialMediaType)
+
+        loadStream()
+
+    }
+
+    private fun loadStream() {
+        viewModelScope.launch {
+            streamManager.startStream(initialMediaId, initialMediaType)
+        }
     }
 
     fun onEvent(event: PlayerUiEvent) {
         when (event) {
             // --- Controles de Reproducción ---
             is PlayerUiEvent.OnPlayPauseToggle -> togglePlayPause()
-            is PlayerUiEvent.OnNextClick -> loadNextAsset()
-            is PlayerUiEvent.OnPrevClick -> loadPrevAsset()
-            is PlayerUiEvent.OnSeekTo -> seekTo(event.position)
-            is PlayerUiEvent.OnSeekRelative -> seekRelative(event.offset)
+            is PlayerUiEvent.OnNextClick -> {
+                //loadNextAsset()
+            }
+            is PlayerUiEvent.OnPrevClick -> {
+                //loadPrevAsset()
+            }
+            is PlayerUiEvent.OnSeekTo -> {
+                playerManager.seekTo(event.position)
+                showControlsAndResetTimer()
+            }
+            is PlayerUiEvent.OnSeekRelative -> {
+                val player = playerManager.exoPlayer
 
-            is PlayerUiEvent.OnToggleSaved -> toggleSaved()
+                val newPosition = (player.currentPosition + event.offset).coerceIn(0, player.duration)
+                playerManager.seekTo(newPosition)
+
+                showControlsAndResetTimer()
+            }
+
+            is PlayerUiEvent.OnToggleSaved -> {
+                //toggleSaved()
+            }
 
             // --- Gestión de Interfaz (Controles y Menús) ---
             is PlayerUiEvent.OnUserInteract -> {
@@ -124,171 +132,31 @@ class PlayerViewModel @Inject constructor(
             is PlayerUiEvent.OnMenuNavigate -> navigateToMenu(event.state)
             is PlayerUiEvent.OnMenuDismiss -> closeSettingsMenu()
             is PlayerUiEvent.OnQualityChange -> changeQuality(event.quality)
-            is PlayerUiEvent.OnProviderChange -> changeProvider(event.provider)
-            is PlayerUiEvent.OnAudioChange -> changeAudio(event.audioMetadata)
+            is PlayerUiEvent.OnProviderChange -> {
+                //changeProvider(event.provider)
+            }
+            is PlayerUiEvent.OnAudioChange -> {
+                //changeAudio(event.audioMetadata)
+            }
 
             // --- Ciclo de Vida y Navegación ---
             is PlayerUiEvent.OnPlayerReady -> onPlayerViewReady(event.playerView)
-            is PlayerUiEvent.OnLifecyclePause -> pausePlayback()
-            is PlayerUiEvent.OnLifecycleResume -> resumePlayback()
-            is PlayerUiEvent.OnRetryPlayback -> loadAsset(initialMediaId, initialMediaType)
+            is PlayerUiEvent.OnLifecyclePause -> {
+                playerManager.pause()
+
+                controlsHideJob?.cancel()
+
+                updateControlsState { it.copy(isVisible = true) }
+            }
+            is PlayerUiEvent.OnLifecycleResume -> {
+                playerManager.resume()
+                showControlsAndResetTimer()
+            }
+            is PlayerUiEvent.OnRetryPlayback -> {
+                //loadStream(initialMediaId, initialMediaType)
+            }
             is PlayerUiEvent.OnBackClick -> handleBackNavigation()
         }
-    }
-
-    private fun loadAsset(id: String, mediaType: MediaType) {
-
-        isMenuInitialized = false
-
-        viewModelScope.launch {
-
-            _uiState.update { PlayerUiState.Loading("Consultando contenido...") }
-            currentSourceIndex = 0
-
-            playerManager.pause()
-
-            val metadata = getPlayerMetadataUseCase(id, mediaType)
-            rawMetadata = metadata
-
-            if (metadata == null || metadata.sources.isEmpty()) {
-                _uiState.update { PlayerUiState.Error("No se encontraron fuentes de video.") }
-                return@launch
-            }
-
-            val defaultAudio = metadata.sources.first().audio
-            filteredSources = metadata.sources.filter { it.audio == defaultAudio }
-            currentSourceIndex = 0
-
-            playCurrentSource(metadata)
-
-            launch(Dispatchers.IO) {
-                preloadSiblings(metadata, mediaType)
-            }
-
-        }
-
-    }
-
-    @OptIn(UnstableApi::class)
-    private fun playCurrentSource(
-        metadata: PlayerMetadata,
-        startFromPosition: Long? = null,
-        forceRefresh: Boolean = false
-    ) {
-
-        if (currentSourceIndex >= filteredSources.size) {
-            _uiState.update { PlayerUiState.Error("No hay servidores disponibles.") }
-            return
-        }
-
-        val source = filteredSources[currentSourceIndex]
-        val sourceName = source.provider ?: "Fuente #$currentSourceIndex"
-
-        viewModelScope.launch {
-
-            _uiState.update { PlayerUiState.Loading("Conectando con $sourceName...") }
-
-            val observerJob = launch {
-                extractionState.collect { state ->
-                    if (state !is StreamExtractionState.Idle && state !is StreamExtractionState.Success) {
-                        _uiState.update { PlayerUiState.Loading(state.message) }
-                    }
-                }
-            }
-
-            val result = streamPreloadManager.getStream(
-                assetId = metadata.assetId,
-                mediaType = metadata.mediaType,
-                source = source,
-                forceRefresh = forceRefresh
-            )
-
-            observerJob.cancel()
-
-            result.fold(
-                onSuccess = { playbackData ->
-
-                    currentOriginalUri = when (source) {
-                        is Stream.Direct -> source.uri
-                        is Stream.WebViewScrap -> source.iframeUrl
-                    }
-                    currentResolvedUrl = playbackData.uri
-
-                    val player = playerManager.exoPlayer
-
-                    val seekPos = startFromPosition ?: rawMetadata?.mediaType.let {
-                        if (it != MediaType.CHANNEL) {
-                            if (metadata.isFinished) 0L else metadata.lastPosition
-                        } else null
-                    }
-
-                    player.stop()
-                    player.clearMediaItems()
-
-                    val mediaSource = playerManager.createMediaSource(playbackData)
-
-                    player.setMediaSource(mediaSource)
-                    player.prepare()
-
-                    if (seekPos != null) {
-                        player.seekTo(seekPos)
-                    } else {
-                        player.seekToDefaultPosition()
-                    }
-
-                    player.play()
-
-                },
-                onFailure = { error ->
-                    playNextSource(metadata)
-                }
-            )
-
-        }
-
-    }
-
-    private fun playNextSource(metadata: PlayerMetadata) {
-
-        val sources = metadata.sources
-
-        if (!lastExecutionWasForced) {
-            lastExecutionWasForced = true
-            playCurrentSource(metadata, forceRefresh = true)
-            return
-        }
-
-        lastExecutionWasForced = false
-        currentSourceIndex++
-
-        if (currentSourceIndex < sources.size) {
-            playCurrentSource(metadata)
-        } else {
-            _uiState.update {
-                PlayerUiState.Error("No se pudo reproducir ninguna de las fuentes disponibles.")
-            }
-        }
-
-    }
-
-    private suspend fun preloadSiblings(currentMetadata: PlayerMetadata, mediaType: MediaType) {
-
-        currentMetadata.nextContentId?.let { nextId ->
-            val nextMetadata = getPlayerMetadataUseCase(nextId, mediaType)
-            nextMetadata?.sources?.firstOrNull()?.let { nextSource ->
-                streamPreloadManager.prefetch(nextId, mediaType, nextSource)
-            }
-        }
-
-        delay(2000)
-
-        currentMetadata.prevContentId?.let { prevId ->
-            val prevMetadata = getPlayerMetadataUseCase(prevId, mediaType)
-            prevMetadata?.sources?.firstOrNull()?.let { prevSource ->
-                streamPreloadManager.prefetch(prevId, mediaType, prevSource)
-            }
-        }
-
     }
 
     private fun startProgressPoller() {
@@ -318,7 +186,7 @@ class PlayerViewModel @Inject constructor(
 
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastSavedTime >= 10_000) {
-                        saveProgress(currentPosition, duration)
+                        //saveProgress(currentPosition, duration)
                         lastSavedTime = currentTime
                     }
 
@@ -335,14 +203,13 @@ class PlayerViewModel @Inject constructor(
 
         if (duration <= 0 || currentPos < 5000) return
 
-        val meta = rawMetadata ?: return
         val isFinished = (currentPos.toFloat() / duration) > 0.90f
 
         viewModelScope.launch(NonCancellable) {
 
             val thumbnailPath = captureThumbnail()
 
-            val progress = meta.toMediaProgress(
+            val progress = streamManager.getMetadata(initialMediaId, initialMediaType).toMediaProgress(
                 thumbnailPath = thumbnailPath,
                 currentPos = currentPos,
                 totalDuration = duration,
@@ -359,7 +226,6 @@ class PlayerViewModel @Inject constructor(
         try {
 
             val textureView = playerView ?: return null
-            val assetId = rawMetadata?.assetId ?: return null
 
             val bitmap = withContext(Dispatchers.Main) {
                 textureView.bitmap
@@ -376,7 +242,7 @@ class PlayerViewModel @Inject constructor(
                 val thumbnailDir = File(context.filesDir, "thumbnails")
                 thumbnailDir.mkdirs()
 
-                val file = File(thumbnailDir, "thumb_$assetId.jpg")
+                val file = File(thumbnailDir, "thumb_$initialMediaId.jpg")
                 FileOutputStream(file).use { out ->
                     resized.compress(Bitmap.CompressFormat.JPEG, 80, out)
                 }
@@ -424,42 +290,23 @@ class PlayerViewModel @Inject constructor(
 
     }
 
-    private fun loadNextAsset() {
-        rawMetadata?.nextContentId?.let { nextId ->
+    /*private fun loadNextAsset() {
+        streamMetadata?.nextContentId?.let { nextId ->
             progressPollerJob?.cancel()
-            loadAsset(nextId, initialMediaType)
+            loadStream(nextId, initialMediaType)
         }
     }
 
     private fun loadPrevAsset() {
-        rawMetadata?.prevContentId?.let { prevId ->
+        streamMetadata?.prevContentId?.let { prevId ->
             progressPollerJob?.cancel()
-            loadAsset(prevId, initialMediaType)
+            loadStream(prevId, initialMediaType)
         }
-    }
+    }*/
 
-    private fun seekTo(position: Long) {
+    /*private fun toggleSaved() {
 
-        playerManager.exoPlayer.seekTo(position)
-
-        showControlsAndResetTimer()
-
-    }
-
-    private fun seekRelative(offset: Long) {
-
-        val player = playerManager.exoPlayer
-
-        val newPosition = (player.currentPosition + offset).coerceIn(0, player.duration)
-        player.seekTo(newPosition)
-
-        showControlsAndResetTimer()
-
-    }
-
-    private fun toggleSaved() {
-
-        val meta = rawMetadata ?: return
+        val meta = streamMetadata ?: return
         val videoMetadata =  (uiState.value as? PlayerUiState.Success)?.videoMetadata ?: return
 
         viewModelScope.launch {
@@ -476,7 +323,7 @@ class PlayerViewModel @Inject constructor(
 
         }
 
-    }
+    }*/
 
     // --- Gestión de Interfaz (Controles y Menús) ---
     private fun showControlsAndResetTimer() {
@@ -528,7 +375,8 @@ class PlayerViewModel @Inject constructor(
             if (state is PlayerUiState.Success) {
 
                 val updatedState = if (!isMenuInitialized) {
-                    initializeMenuState(state)
+                    //initializeMenuState(state)
+                    state
                 } else state
 
                 val player = playerManager.exoPlayer
@@ -558,9 +406,9 @@ class PlayerViewModel @Inject constructor(
 
     }
 
-    private fun initializeMenuState(state: PlayerUiState.Success): PlayerUiState.Success {
+    /*private fun initializeMenuState(state: PlayerUiState.Success): PlayerUiState.Success {
 
-        val allSources = rawMetadata?.sources ?: emptyList()
+        val allSources = streamMetadata?.sources ?: emptyList()
         val currentStream = filteredSources.getOrNull(currentSourceIndex)
 
         val uniqueAudio = extractUniqueAudioMetadata(allSources)
@@ -583,12 +431,12 @@ class PlayerViewModel @Inject constructor(
             )
         )
 
-    }
+    }*/
 
-    private fun startProvidersAnalysis(sources: List<Stream>) {
+    /*private fun startProvidersAnalysis(sources: List<Stream>) {
 
-        val assetId = rawMetadata?.assetId ?: return
-        val mediaType = rawMetadata?.mediaType ?: return
+        val assetId = streamMetadata?.assetId ?: return
+        val mediaType = streamMetadata?.mediaType ?: return
 
         sources.forEach { source ->
 
@@ -605,7 +453,7 @@ class PlayerViewModel @Inject constructor(
             viewModelScope.launch(Dispatchers.IO) {
                 try {
 
-                    val metadata = analyzeProviderUseCase(
+                    /*val metadata = analyzeProviderUseCase(
                         assetId = assetId,
                         mediaType = mediaType,
                         source = source
@@ -621,13 +469,13 @@ class PlayerViewModel @Inject constructor(
                                 )
                             } else state
                         }
-                    }
+                    }*/
 
                 } catch (e: Exception) {
                 }
             }
         }
-    }
+    }*/
 
     private fun extractUniqueAudioMetadata(sources: List<Stream>): List<AudioMetadata> {
         return sources.map {
@@ -673,9 +521,9 @@ class PlayerViewModel @Inject constructor(
 
     }
 
-    private fun changeProvider(provider: Stream) {
+    /*private fun changeProvider(provider: Stream) {
 
-        val metadata = rawMetadata ?: return
+        val metadata = streamMetadata ?: return
 
         val index = filteredSources.indexOf(provider)
 
@@ -685,15 +533,15 @@ class PlayerViewModel @Inject constructor(
 
             val currentPos = playerManager.exoPlayer.currentPosition
 
-            playCurrentSource(metadata, startFromPosition = currentPos)
+            playStream(metadata, startFromPosition = currentPos)
 
         }
 
-    }
+    }*/
 
-    private fun changeAudio(audioMetadata: AudioMetadata) {
+    /*private fun changeAudio(audioMetadata: AudioMetadata) {
 
-        val metadata = rawMetadata ?: return
+        val metadata = streamMetadata ?: return
 
         val newFilteredSources = metadata.sources.filter { it.audio == audioMetadata.code }
 
@@ -705,11 +553,11 @@ class PlayerViewModel @Inject constructor(
 
             val currentPos = playerManager.exoPlayer.currentPosition
 
-            playCurrentSource(metadata, startFromPosition = currentPos)
+            playStream(metadata, startFromPosition = currentPos)
 
         }
 
-    }
+    }*/
 
     // --- Ciclo de Vida y Navegación ---
     private fun onPlayerViewReady(playerView: TextureView) {
@@ -722,30 +570,12 @@ class PlayerViewModel @Inject constructor(
 
     }
 
-    private fun pausePlayback() {
-
-        playerManager.pause()
-
-        controlsHideJob?.cancel()
-
-        updateControlsState { it.copy(isVisible = true) }
-
-    }
-
-    private fun resumePlayback() {
-
-        playerManager.resume()
-
-        showControlsAndResetTimer()
-
-    }
-
     private fun handleBackNavigation() {
 
         _uiState.update { PlayerUiState.Closing }
 
         val player = playerManager.exoPlayer
-        saveProgress(player.currentPosition, player.duration)
+        //saveProgress(player.currentPosition, player.duration)
 
         playerManager.pause()
         viewModelScope.launch {
@@ -756,9 +586,8 @@ class PlayerViewModel @Inject constructor(
 
     private fun setupPlayerListeners() {
 
-        playerManager.exoPlayer.addListener(object : Player.Listener {
-
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
+        streamManager.setupPlayerListener(
+            onIsPlayingChanged = { isPlaying ->
 
                 updatePlaybackState { it.copy(isPlaying = isPlaying) }
 
@@ -769,38 +598,36 @@ class PlayerViewModel @Inject constructor(
                     showControlsAndResetTimer()
                 }
 
-            }
-
-            override fun onPlaybackStateChanged(state: Int) {
+            },
+            onPlaybackStateChanged = { state ->
 
                 updatePlaybackState { it.copy(isBuffering = state == Player.STATE_BUFFERING) }
 
                 when (state) {
+
                     Player.STATE_READY -> {
+
                         if (_uiState.value !is PlayerUiState.Success) {
 
-                            val original = currentOriginalUri
-                            val resolved = currentResolvedUrl
+                            viewModelScope.launch {
 
-                            if (original != null && resolved != null) {
-                                viewModelScope.launch {
-                                    reportSuccessfulPlaybackUseCase(original, resolved)
+                                streamManager.reportSuccess()
+
+                                _uiState.update {
+                                    PlayerUiState.Success(
+                                        videoMetadata = streamManager.getMetadata(initialMediaId, initialMediaType).toVideoMetadata(),
+                                        playback = PlaybackState(
+                                            isPlaying = true,
+                                            totalDuration = playerManager.exoPlayer.duration,
+                                            isBuffering = false
+                                        ),
+                                        controls = ControlsState(isVisible = true),
+                                        quality = QualityState(),
+                                        provider = ProviderState(),
+                                        audio = AudioState()
+                                    )
                                 }
-                            }
 
-                            _uiState.update {
-                                PlayerUiState.Success(
-                                    videoMetadata = rawMetadata!!.toVideoMetadata(),
-                                    playback = PlaybackState(
-                                        isPlaying = true,
-                                        totalDuration = playerManager.exoPlayer.duration,
-                                        isBuffering = false
-                                    ),
-                                    controls = ControlsState(isVisible = true),
-                                    quality = QualityState(),
-                                    provider = ProviderState(),
-                                    audio = AudioState()
-                                )
                             }
 
                             startProgressPoller()
@@ -808,29 +635,28 @@ class PlayerViewModel @Inject constructor(
 
                         }
                     }
+
                     Player.STATE_ENDED -> {
 
-                        val player = playerManager.exoPlayer
+                        /*val player = playerManager.exoPlayer
                         saveProgress(player.currentPosition, player.duration)
 
                         progressPollerJob?.cancel()
 
-                        if (rawMetadata?.nextContentId != null) {
+                        if (streamMetadata?.nextContentId != null) {
                             loadNextAsset()
                         } else {
                             handleBackNavigation()
-                        }
+                        }*/
+                        handleBackNavigation()
 
                     }
+
                 }
 
             }
 
-            override fun onTracksChanged(tracks: Tracks) {
-
-            }
-
-        })
+        )
 
         playerManager.setPlaybackErrorCallback { error ->
             handlePlaybackError(error)
@@ -849,7 +675,7 @@ class PlayerViewModel @Inject constructor(
             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
             PlaybackException.ERROR_CODE_IO_UNSPECIFIED -> {
 
-                if (networkRetryCount < maxRetries) {
+                /*if (networkRetryCount < maxRetries) {
 
                     networkRetryCount++
                     _uiState.update { PlayerUiState.Loading("Inestabilidad de red. Reintentando ($networkRetryCount/$maxRetries)...") }
@@ -858,25 +684,25 @@ class PlayerViewModel @Inject constructor(
                     player.play()
 
                 } else {
-                    //_uiState.update { PlayerUiState.Error("Fallo de conexión. Verifica tu internet y vuelve a intentar.") }
+                    uiState.update { PlayerUiState.Error("Fallo de conexión. Verifica tu internet y vuelve a intentar.") }
                     _uiState.update { currentState ->
                         if (currentState is PlayerUiState.Success) {
                             PlayerUiState.Loading("Fuente caída. Buscando alternativa...")
                         } else currentState
                     }
 
-                    rawMetadata?.let { metadata ->
+                    streamMetadata?.let { metadata ->
                         playNextSource(metadata)
                     } ?: run {
                         _uiState.update { PlayerUiState.Error("Fallo crítico: No hay más fuentes disponibles.") }
                     }
-                }
+                }*/
 
             }
 
             PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE -> {
 
-                if (networkRetryCount < maxRetries) {
+                /*if (networkRetryCount < maxRetries) {
 
                     networkRetryCount++
 
@@ -888,21 +714,21 @@ class PlayerViewModel @Inject constructor(
 
                 } else {
                     _uiState.update { PlayerUiState.Error("La transmisión se interrumpió.") }
-                }
+                }*/
 
             }
 
             PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW -> {
-                player.seekToDefaultPosition()
+                /*player.seekToDefaultPosition()
                 player.prepare()
-                player.play()
+                player.play()*/
             }
 
             PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
             PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
             PlaybackException.ERROR_CODE_IO_CLEARTEXT_NOT_PERMITTED -> {
 
-                networkRetryCount = 0
+                /*networkRetryCount = 0
 
                 val currentPos = player.currentPosition
                 val duration = player.duration
@@ -914,11 +740,11 @@ class PlayerViewModel @Inject constructor(
                     } else currentState
                 }
 
-                rawMetadata?.let { metadata ->
-                    playNextSource(metadata)
+                streamMetadata?.let { metadata ->
+                    //playNextSource(metadata)
                 } ?: run {
                     _uiState.update { PlayerUiState.Error("Fallo crítico: No hay más fuentes disponibles.") }
-                }
+                }*/
 
             }
 
@@ -926,7 +752,7 @@ class PlayerViewModel @Inject constructor(
             PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED,
             PlaybackException.ERROR_CODE_DECODING_FAILED -> {
 
-                val currentPos = player.currentPosition
+                /*val currentPos = player.currentPosition
                 val skipMillis = 2000L
 
                 if (networkRetryCount < maxRetries) {
@@ -945,11 +771,16 @@ class PlayerViewModel @Inject constructor(
                     _uiState.update {
                         PlayerUiState.Error("Tu dispositivo no puede procesar este segmento del video.")
                     }
-                }
+                }*/
 
             }
 
             else -> {
+                viewModelScope.launch {
+                    streamManager.reportFailure("Error desconocido ($errorCode).")
+                    streamManager.retry()
+                    loadStream()
+                }
                 _uiState.update { PlayerUiState.Error("Error desconocido ($errorCode).") }
             }
 
@@ -959,7 +790,7 @@ class PlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        playerManager.releasePlayer()
+        streamManager.clear()
         controlsHideJob?.cancel()
         progressPollerJob?.cancel()
     }

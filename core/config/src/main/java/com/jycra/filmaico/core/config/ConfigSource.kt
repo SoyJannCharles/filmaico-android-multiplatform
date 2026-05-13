@@ -11,7 +11,4 @@ interface ConfigSource {
     fun getTvarCdnAuthHeader(): String
     fun getDrmUserAgent(): String
 
-    fun getCvattvJwtUrl(): String
-    fun getCvattvCdnTokenUrl(): String
-
 }

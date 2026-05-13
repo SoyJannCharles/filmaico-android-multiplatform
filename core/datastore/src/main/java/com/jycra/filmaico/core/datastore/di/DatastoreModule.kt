@@ -5,13 +5,13 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.jycra.filmaico.core.datastore.CookieStoreImpl
-import com.jycra.filmaico.core.datastore.EdgeHostStoreImpl
+import com.jycra.filmaico.core.datastore.EdgeNodeDataStore
 import com.jycra.filmaico.core.datastore.EpgStoreImpl
 import com.jycra.filmaico.core.datastore.JwtStoreImpl
 import com.jycra.filmaico.core.datastore.SessionStoreImpl
 import com.jycra.filmaico.data.media.data.store.EpgStore
 import com.jycra.filmaico.data.stream.data.store.CookieStore
-import com.jycra.filmaico.data.stream.data.store.EdgeHostStore
+import com.jycra.filmaico.data.stream.data.store.EdgeNodeStore
 import com.jycra.filmaico.data.stream.data.store.JwtStore
 import com.jycra.filmaico.data.user.data.store.SessionStore
 import dagger.Binds
@@ -49,8 +49,8 @@ abstract class DatastoreModule {
     @Binds
     @Singleton
     abstract fun bindEdgeHostStore(
-        impl: EdgeHostStoreImpl
-    ): EdgeHostStore
+        impl: EdgeNodeDataStore
+    ): EdgeNodeStore
 
     @Binds
     @Singleton

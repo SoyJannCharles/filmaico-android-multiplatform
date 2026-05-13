@@ -5,9 +5,7 @@ import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Streaming
 import retrofit2.http.Url
-import javax.inject.Singleton
 
-@Singleton
 interface EpgApi {
 
     @Streaming

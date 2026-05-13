@@ -13,7 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.jycra.filmaico.core.device.Platform
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.feature.anime.AnimeRoute
 import com.jycra.filmaico.feature.channel.ChannelRoute
 import com.jycra.filmaico.feature.home.common.HomeTabs

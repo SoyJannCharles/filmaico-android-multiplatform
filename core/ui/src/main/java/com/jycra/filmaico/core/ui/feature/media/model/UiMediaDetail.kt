@@ -2,7 +2,7 @@ package com.jycra.filmaico.core.ui.feature.media.model
 
 import com.jycra.filmaico.core.ui.feature.media.model.UiMediaSeason
 import com.jycra.filmaico.domain.media.model.ContentStatus
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 data class UiMediaDetail(
     val id: String,

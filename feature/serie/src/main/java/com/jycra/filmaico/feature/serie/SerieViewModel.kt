@@ -7,8 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jycra.filmaico.core.ui.feature.media.util.mapper.toUiCarousels
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
-import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.usecase.GetMediaContentUseCase
+import com.jycra.filmaico.domain.stream.util.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow

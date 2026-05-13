@@ -5,7 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.navigation.route.AppRoutes
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 fun NavGraphBuilder.mainRoute(
     platform: Platform,

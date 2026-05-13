@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.jycra.filmaico.core.ui.R
-import com.jycra.filmaico.domain.media.model.stream.Stream
+import com.jycra.filmaico.domain.stream.model.Stream
 import com.jycra.filmaico.domain.stream.model.metadata.ProviderMetadata
 
 @Composable

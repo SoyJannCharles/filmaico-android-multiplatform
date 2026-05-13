@@ -1,6 +1,5 @@
 package com.jycra.filmaico.feature.channel
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,12 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jycra.filmaico.core.ui.feature.media.util.mapper.toUiCarousels
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
-import com.jycra.filmaico.domain.media.model.Media
-import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.usecase.GetCurrentEpgUseCase
 import com.jycra.filmaico.domain.media.usecase.GetMediaContentUseCase
-import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
-import com.jycra.filmaico.shared.managers.StreamPreloadManager
+import com.jycra.filmaico.domain.media.usecase.GetStreamMetadataUseCase
+import com.jycra.filmaico.domain.stream.util.MediaType
+import com.jycra.filmaico.shared.managers.StreamManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,9 +25,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ChannelViewModel @Inject constructor(
-    private val streamPreloadManager: StreamPreloadManager,
+    private val streamManager: StreamManager,
     private val getMediaContentUseCase: GetMediaContentUseCase,
-    private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
+    private val getStreamMetadataUseCase: GetStreamMetadataUseCase,
     private val getCurrentEpgUseCase: GetCurrentEpgUseCase
 ) : ViewModel() {
 
@@ -114,26 +112,7 @@ class ChannelViewModel @Inject constructor(
             val carousel = currentState.carousels.getOrNull(carouselIndex) ?: return
             val item = carousel.items.getOrNull(contentIndex) ?: return
 
-            viewModelScope.launch {
-
-                val metadata = getPlayerMetadataUseCase(
-                    assetId = item.id,
-                    mediaType = MediaType.CHANNEL
-                )
-
-                if (metadata != null && metadata.sources.isNotEmpty()) {
-
-                    val bestSource = metadata.sources.first()
-
-                    streamPreloadManager.startPreload(
-                        assetId = metadata.assetId,
-                        mediaType = metadata.mediaType,
-                        source = bestSource
-                    )
-
-                }
-
-            }
+            //streamManager.prepareForDiscovery(item.id, MediaType.CHANNEL)
 
         }
 

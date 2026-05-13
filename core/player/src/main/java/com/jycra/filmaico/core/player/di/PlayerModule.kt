@@ -12,42 +12,40 @@ import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import com.google.gson.Gson
 import com.jycra.filmaico.core.network.di.XAuthHttpClient
 import com.jycra.filmaico.core.player.PlayerManager
-import com.jycra.filmaico.core.player.RamManifestCache
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ViewModelComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ViewModelScoped
+import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
+import javax.inject.Singleton
 
 @Module
-@InstallIn(ViewModelComponent::class)
+@InstallIn(SingletonComponent::class)
 object PlayerModule {
 
     @OptIn(UnstableApi::class)
     @Provides
-    @ViewModelScoped
+    @Singleton
     fun provideExoPlayer(
         @ApplicationContext context: Context
     ): ExoPlayer {
         return ExoPlayer
             .Builder(
-                context,
-                DefaultRenderersFactory(context)
-                    .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+                context, DefaultRenderersFactory(context)
+                    .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
                     .setEnableDecoderFallback(true)
             )
             .setTrackSelector(
-                DefaultTrackSelector(
-                    context,
-                    AdaptiveTrackSelection.Factory()
-                )
+                DefaultTrackSelector(context, AdaptiveTrackSelection.Factory())
             )
             .setLoadControl(
                 DefaultLoadControl.Builder()
-                    .setBufferDurationsMs(30_000, 50_000, 1000, 2_000)
-                    .setBackBuffer(20_000, true)
+                    .setBufferDurationsMs(30000, 50000, 1000, 1500)
+                    .setBackBuffer(10000, true)
+                    .setPrioritizeTimeOverSizeThresholds(true)
                     .build()
             )
             .setBandwidthMeter(
@@ -59,15 +57,14 @@ object PlayerModule {
     }
 
     @Provides
-    @ViewModelScoped
+    @Singleton
     fun providePlayerManager(
         @ApplicationContext context: Context,
         @XAuthHttpClient client: OkHttpClient,
-        ramManifestCache: RamManifestCache,
-        gson: Gson,
-        exoPlayer: ExoPlayer
+        exoPlayer: ExoPlayer,
+        gson: Gson
     ): PlayerManager {
-        return PlayerManager(context, client, ramManifestCache, gson, exoPlayer)
+        return PlayerManager(context, client, exoPlayer, gson)
     }
 
 }

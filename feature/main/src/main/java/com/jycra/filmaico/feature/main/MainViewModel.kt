@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jycra.filmaico.core.app.SessionManager
 import com.jycra.filmaico.core.ui.util.formatTimeRemaining
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.domain.media.usecase.SyncEpgUseCase
 import com.jycra.filmaico.domain.media.usecase.SyncMetadataRealtimeUseCase
 import com.jycra.filmaico.domain.media.usecase.SyncMetadataSnapshotUseCase

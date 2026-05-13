@@ -1,5 +1,6 @@
 package com.jycra.filmaico.feature.movie.detail.component
 
+import android.util.Log
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -231,7 +232,9 @@ fun MovieDetailContent(
                     } else Modifier
                 ),
             shape = RoundedCornerShape(8.dp),
-            onClick = onStartPlayback,
+            onClick = {
+                Log.d("StreamPreload", "User touch Play Button")
+                onStartPlayback() },
             colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp) // Quitamos elevación nativa
         ) {

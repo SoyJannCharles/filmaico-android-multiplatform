@@ -1,7 +1,7 @@
 package com.jycra.filmaico.core.ui.feature.media.model
 
 import com.jycra.filmaico.core.ui.feature.media.util.variant.MediaCardVariant
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

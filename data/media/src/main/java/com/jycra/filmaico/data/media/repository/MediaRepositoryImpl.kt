@@ -23,7 +23,7 @@ import com.jycra.filmaico.domain.media.model.ContentStatus
 import com.jycra.filmaico.domain.media.model.Epg
 import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.model.MediaCarousel
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.domain.media.model.metadata.PlaybackNavigation
 import com.jycra.filmaico.domain.media.repository.MediaRepository
 import kotlinx.coroutines.CoroutineScope

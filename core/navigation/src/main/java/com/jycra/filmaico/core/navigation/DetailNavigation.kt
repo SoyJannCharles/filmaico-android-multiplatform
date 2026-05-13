@@ -7,7 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.jycra.filmaico.core.device.Platform
 import com.jycra.filmaico.core.navigation.route.AppRoutes
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 import com.jycra.filmaico.feature.anime.detail.AnimeDetailRoute
 import com.jycra.filmaico.feature.movie.detail.MovieDetailRoute
 import com.jycra.filmaico.feature.serie.detail.SerieDetailRoute

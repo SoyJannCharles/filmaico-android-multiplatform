@@ -5,7 +5,7 @@ import com.jycra.filmaico.data.media.util.mapper.dto.toDomain
 import com.jycra.filmaico.domain.media.model.ContentStatus
 import com.jycra.filmaico.domain.media.model.Media
 import com.jycra.filmaico.domain.media.model.MediaSeason
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 fun MediaEntity.toDomain(
     tags: List<String> = emptyList(),

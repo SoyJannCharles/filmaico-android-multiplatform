@@ -1,43 +1,43 @@
 package com.jycra.filmaico.core.network.di
 
-import android.annotation.SuppressLint
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.jycra.filmaico.core.config.ConfigSource
-import com.jycra.filmaico.core.network.EdgeNodeSource
-import com.jycra.filmaico.core.network.api.EpgApi
 import com.jycra.filmaico.core.network.EpgSource
-import com.jycra.filmaico.core.network.NetworkConnectivityObserver
-import com.jycra.filmaico.core.network.StreamSource
 import com.jycra.filmaico.core.network.api.EdgeNodeApi
-import com.jycra.filmaico.core.network.api.StreamApi
+import com.jycra.filmaico.core.network.api.EpgApi
+import com.jycra.filmaico.core.network.api.StreamCredentialsApi
 import com.jycra.filmaico.core.network.cookies.AppCookieJar
-import com.jycra.filmaico.core.network.util.EdgeLatencyProberImpl
-import com.jycra.filmaico.core.network.util.FlowUrlResolverImpl
+import com.jycra.filmaico.core.network.observer.NetworkConnectivityObserver
+import com.jycra.filmaico.core.network.provider.RemoteCookieProvider
+import com.jycra.filmaico.core.network.provider.RemoteDrmKeyProvider
+import com.jycra.filmaico.core.network.provider.RemoteEdgeNodeProvider
+import com.jycra.filmaico.core.network.resolver.DefaultIframeResolver
+import com.jycra.filmaico.core.network.util.prober.EdgeNodeProberImpl
+import com.jycra.filmaico.core.network.util.prober.SeedProberImpl
 import com.jycra.filmaico.data.media.data.service.EpgService
-import com.jycra.filmaico.data.stream.data.service.EdgeNodeService
-import com.jycra.filmaico.data.stream.data.service.StreamService
-import com.jycra.filmaico.data.stream.util.EdgeLatencyProber
-import com.jycra.filmaico.data.stream.util.FlowUrlResolver
+import com.jycra.filmaico.data.stream.data.provider.CookieProvider
+import com.jycra.filmaico.data.stream.data.provider.DrmKeyProvider
+import com.jycra.filmaico.data.stream.data.provider.EdgeNodeProvider
+import com.jycra.filmaico.data.stream.resolver.IframeResolver
+import com.jycra.filmaico.data.stream.util.prober.EdgeNodeProber
+import com.jycra.filmaico.data.stream.util.prober.SeedProber
 import com.jycra.filmaico.domain.network.ConnectivityObserver
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import okhttp3.ConnectionPool
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -45,21 +45,15 @@ abstract class NetworkModule {
 
     @Binds
     @Singleton
-    abstract fun bindStreamService(
-        impl: StreamSource
-    ): StreamService
+    abstract fun bindIframeResolver(
+        impl: DefaultIframeResolver
+    ): IframeResolver
 
     @Binds
     @Singleton
-    abstract fun bindFlowUrlResolver(
-        impl: FlowUrlResolverImpl
-    ): FlowUrlResolver
-
-    @Binds
-    @Singleton
-    abstract fun bindEdgeNodeService(
-        impl: EdgeNodeSource
-    ): EdgeNodeService
+    abstract fun bindEdgeNodeProvider(
+        impl: RemoteEdgeNodeProvider
+    ): EdgeNodeProvider
 
     @Binds
     @Singleton
@@ -69,15 +63,33 @@ abstract class NetworkModule {
 
     @Binds
     @Singleton
-    abstract fun bindConnectivityObserver(
-        impl: NetworkConnectivityObserver
-    ): ConnectivityObserver
+    abstract fun bindEdgeProber(
+        impl: EdgeNodeProberImpl
+    ): EdgeNodeProber
 
     @Binds
     @Singleton
-    abstract fun bindEdgeLatencyProber(
-        impl: EdgeLatencyProberImpl
-    ): EdgeLatencyProber
+    abstract fun bindStreamProber(
+        impl: SeedProberImpl
+    ): SeedProber
+
+    @Binds
+    @Singleton
+    abstract fun bindCookieProvider(
+        impl: RemoteCookieProvider
+    ): CookieProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindDrmKeyProvider(
+        impl: RemoteDrmKeyProvider
+    ): DrmKeyProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindConnectivityObserver(
+        impl: NetworkConnectivityObserver
+    ): ConnectivityObserver
 
     companion object {
 
@@ -113,23 +125,11 @@ abstract class NetworkModule {
             cookieJar: AppCookieJar
         ): OkHttpClient {
 
-            val trustAllCerts = arrayOf<TrustManager>(@SuppressLint("CustomX509TrustManager")
-            object : X509TrustManager {
-                @SuppressLint("TrustAllX509TrustManager")
-                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-                @SuppressLint("TrustAllX509TrustManager")
-                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
-                override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-            })
-
-            val sslContext = SSLContext.getInstance("SSL").apply {
-                init(null, trustAllCerts, SecureRandom())
-            }
-
             return OkHttpClient.Builder()
-                .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-                .hostnameVerifier { _, _ -> true }
                 .cookieJar(cookieJar)
+                .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
+                .connectionPool(ConnectionPool(20, 1, TimeUnit.MINUTES))
+                .retryOnConnectionFailure(true)
                 .addInterceptor(failFastInterceptor)
                 .addInterceptor(xAuthInterceptor)
                 .addInterceptor(loggingInterceptor)
@@ -200,8 +200,8 @@ abstract class NetworkModule {
 
         @Provides
         @Singleton
-        fun provideStreamApiService(retrofit: Retrofit): StreamApi {
-            return retrofit.create(StreamApi::class.java)
+        fun provideStreamCredentialsApi(retrofit: Retrofit): StreamCredentialsApi {
+            return retrofit.create(StreamCredentialsApi::class.java)
         }
 
         @Provides

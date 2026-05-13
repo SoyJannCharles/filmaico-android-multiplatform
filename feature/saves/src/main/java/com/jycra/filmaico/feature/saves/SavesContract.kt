@@ -1,7 +1,7 @@
 package com.jycra.filmaico.feature.saves
 
 import com.jycra.filmaico.core.ui.feature.media.model.UiMediaCarousel
-import com.jycra.filmaico.domain.media.model.MediaType
+import com.jycra.filmaico.domain.stream.util.MediaType
 
 sealed class SavesUiState {
     object Loading : SavesUiState()

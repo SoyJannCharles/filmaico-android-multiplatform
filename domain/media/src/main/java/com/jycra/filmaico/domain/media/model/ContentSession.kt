@@ -1,13 +1,13 @@
 package com.jycra.filmaico.domain.media.model
 
-import com.jycra.filmaico.domain.media.model.metadata.PlayerMetadata
+import com.jycra.filmaico.domain.media.model.metadata.StreamMetadata
 
 data class ContentSession(
     val id: String,
     val type: String,
     val seasonId: String? = null,
     val parentId: String? = null,
-    val metadata: PlayerMetadata? = null,
+    val metadata: StreamMetadata? = null,
     val currentSourceIndex: Int = 0,
     val lastImageUrl: String = ""
 )

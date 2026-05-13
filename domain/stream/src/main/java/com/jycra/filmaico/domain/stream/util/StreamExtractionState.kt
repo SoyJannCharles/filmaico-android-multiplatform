@@ -30,6 +30,17 @@ sealed class StreamExtractionState(val message: String) {
 
     // Estados Finales
     data class Success(val uri: String) : StreamExtractionState("¡Extracción completada con éxito!")
+
+    sealed class PlayerError(msg: String) : StreamExtractionState(msg) {
+        object NetworkFailure : PlayerError("Conexión inestable. Verifica tu internet.")
+        object FileCorrupt : PlayerError("El archivo de video está dañado o no disponible.")
+        object DecodingIssue : PlayerError("Tu dispositivo no puede procesar este formato de video.")
+        data class Critical(val code: Int) : PlayerError("Error crítico de reproducción (Código: $code)")
+    }
+
+    data class Retrying(val attempt: Int, val max: Int, val reason: String) :
+        StreamExtractionState("Reintentando ($attempt/$max): $reason")
+
     data class Error(val errorMsg: String, val cause: Throwable? = null) : StreamExtractionState("Fallo: $errorMsg")
 
 }

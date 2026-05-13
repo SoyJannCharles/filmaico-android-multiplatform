@@ -8,11 +8,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jycra.filmaico.core.ui.feature.media.util.mapper.toUiDetail
 import com.jycra.filmaico.core.ui.util.focus.MediaFocusState
-import com.jycra.filmaico.domain.media.model.MediaType
 import com.jycra.filmaico.domain.media.usecase.GetMediaContainerUseCase
-import com.jycra.filmaico.domain.media.usecase.GetPlayerMetadataUseCase
+import com.jycra.filmaico.domain.media.usecase.GetStreamMetadataUseCase
 import com.jycra.filmaico.domain.media.usecase.SyncMediaContentUseCase
-import com.jycra.filmaico.shared.managers.StreamPreloadManager
+import com.jycra.filmaico.domain.stream.util.MediaType
+import com.jycra.filmaico.shared.managers.StreamManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,10 +27,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SerieDetailViewModel @Inject constructor(
-    private val streamPreloadManager: StreamPreloadManager,
+    private val streamManager: StreamManager,
     private val syncMediaContentUseCase: SyncMediaContentUseCase,
     private val getMediaContainerUseCase: GetMediaContainerUseCase,
-    private val getPlayerMetadataUseCase: GetPlayerMetadataUseCase,
+    private val getStreamMetadataUseCase: GetStreamMetadataUseCase,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -94,7 +94,7 @@ class SerieDetailViewModel @Inject constructor(
 
                     if (firstEpisode != null) {
 
-                        val metadata = getPlayerMetadataUseCase(
+                        val metadata = getStreamMetadataUseCase(
                             assetId = firstEpisode.id,
                             mediaType = firstEpisode.mediaType
                         )
@@ -103,11 +103,6 @@ class SerieDetailViewModel @Inject constructor(
 
                             val bestSource = metadata.sources.first()
 
-                            streamPreloadManager.startPreload(
-                                assetId = metadata.assetId,
-                                mediaType = metadata.mediaType,
-                                source = bestSource
-                            )
 
                         }
 
@@ -166,7 +161,7 @@ class SerieDetailViewModel @Inject constructor(
 
             viewModelScope.launch {
 
-                val metadata = getPlayerMetadataUseCase(
+                val metadata = getStreamMetadataUseCase(
                     assetId = episode.id,
                     mediaType = episode.mediaType
                 )
@@ -175,11 +170,7 @@ class SerieDetailViewModel @Inject constructor(
 
                     val bestSource = metadata.sources.first()
 
-                    streamPreloadManager.startPreload(
-                        assetId = metadata.assetId,
-                        mediaType = metadata.mediaType,
-                        source = bestSource
-                    )
+
 
                 }
             }

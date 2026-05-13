@@ -11,9 +11,10 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:common"))
     implementation(project(":core:network"))
     implementation(project(":data:stream"))
-    implementation(project(":domain:media"))
+    implementation(project(":domain:stream"))
 }
 
 addMedia3()

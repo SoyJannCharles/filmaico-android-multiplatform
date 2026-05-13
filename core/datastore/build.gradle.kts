@@ -10,6 +10,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:common"))
     implementation(project(":data:user"))
     implementation(project(":data:media"))
     implementation(project(":data:stream"))
